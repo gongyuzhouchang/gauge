@@ -314,39 +314,56 @@ export class GaugeRenderer {
       return;
     }
 
-    const { gauge } = this.layout;
+    const { centerX, centerY, gauge } = this.layout;
+
+    // 计算标签距离中心的距离
     const labelRadius =
       labels.position === 'inner'
         ? gauge.innerRadius - labels.offset
         : gauge.outerRadius + labels.offset;
 
     // 清理旧标签，防止重复渲染
+    this.svg.selectAll('text.horizontal-end-label').remove();
+    this.svg.selectAll('text.end-label').remove();
     this.labelsGroup.selectAll('text').remove();
 
-    // 使用与segments相同的角度范围
+    // 计算水平放置的标签位置
+    // 左侧标签位置（半圆左端）
+    const leftLabelX = centerX - labelRadius;
+    const leftLabelY = centerY + labels.offset;
+
+    // 右侧标签位置（半圆右端）
+    const rightLabelX = centerX + labelRadius;
+    const rightLabelY = centerY + labels.offset;
+
     const labelData = [
       {
         value: range.min,
         text: labels.startLabel,
-        angle: 0 // 起始角度 (旋转前的右侧)
+        x: leftLabelX,
+        y: leftLabelY,
+        anchor: 'end' as const
       },
       {
         value: range.max,
         text: labels.endLabel,
-        angle: Math.PI // 结束角度 (旋转前的左侧)
+        x: rightLabelX,
+        y: rightLabelY,
+        anchor: 'start' as const
       }
     ];
 
     type LabelData = (typeof labelData)[number];
 
-    this.labelsGroup
-      .selectAll<SVGTextElement, LabelData>('text.end-label')
+    // 直接添加到主SVG上，避免受到旋转变换的影响
+    this.svg
+      .selectAll<SVGTextElement, LabelData>('text.horizontal-end-label')
       .data(labelData)
       .join('text')
-      .attr('class', 'end-label')
-      .attr('x', d => Math.cos(d.angle) * labelRadius)
-      .attr('y', d => Math.sin(d.angle) * labelRadius)
-      .attr('text-anchor', 'middle')
+      .attr('class', 'horizontal-end-label')
+      .attr('x', d => d.x)
+      .attr('y', d => d.y)
+      .attr('text-anchor', d => d.anchor)
       .attr('dominant-baseline', 'middle')
       .style('font-size', `${labels.fontSize}px`)
       .attr('fill', labels.color)

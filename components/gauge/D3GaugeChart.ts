@@ -13,7 +13,7 @@ import type { GaugeData } from './types/data';
 export class D3GaugeChart {
   private container: HTMLElement;
 
-  private svg: Selection<SVGSVGElement, any, any, any>;
+  private svg: Selection<SVGSVGElement, unknown, null, undefined>;
 
   private config: GaugeConfig;
 
@@ -31,7 +31,7 @@ export class D3GaugeChart {
     this.renderer = new GaugeRenderer(this.svg, this.config, this.layoutCalculator.getLayout());
   }
 
-  private createSvgContainer(): Selection<SVGSVGElement, any, any, any> {
+  private createSvgContainer(): Selection<SVGSVGElement, unknown, null, undefined> {
     const { width, height } = this.config;
     return select(this.container)
       .append('svg')
@@ -93,7 +93,8 @@ export class D3GaugeChart {
     this.config = merge({}, this.config, newConfig);
     this.layoutCalculator.updateConfig(this.config);
     this.svg.attr('width', this.config.width).attr('height', this.config.height);
-    this._initialRender(); // Re-render completely on config change
+    // Re-render completely on config change
+    this._initialRender();
     return this;
   }
 
@@ -101,6 +102,10 @@ export class D3GaugeChart {
     const width = this.container.clientWidth;
     const height = width * (this.config.height / this.config.width);
     this.updateConfig({ width, height });
+  }
+
+  public getConfig(): GaugeConfig {
+    return this.config;
   }
 
   public destroy(): void {
