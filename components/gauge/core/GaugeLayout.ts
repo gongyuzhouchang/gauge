@@ -190,8 +190,8 @@ export class GaugeLayoutCalculator {
     const { centerX, centerY, gauge } = this.layout;
     const pointerLength = gauge.innerRadius * this.config.pointer.length;
 
-    // 转换为角度制，不需要补偿，因为指针组没有rotate变换
-    const angleDeg = (angle * 180) / Math.PI;
+    const normalizedRatio = angle / Math.PI - 1;
+    const angleDeg = normalizedRatio * 180;
 
     return {
       x: centerX + Math.cos(angle) * pointerLength,

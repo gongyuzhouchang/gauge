@@ -72,7 +72,7 @@ export class GaugeRenderer {
     this.pointerGroup = this.svg
       .append('g')
       .attr('class', 'gauge-pointer')
-      .attr('transform', baseTransform); // 指针不在此处旋转
+      .attr('transform', baseTransform); // 指针组回到基础变换，只有translate
     this.labelsGroup = this.svg
       .append('g')
       .attr('class', 'gauge-labels')
@@ -231,6 +231,9 @@ export class GaugeRenderer {
     const { pointer, centerCircle } = this.config;
     const pointerLength = this.layout.gauge.innerRadius * pointer.length;
 
+    // 强制清除旧的指针元素
+    this.pointerGroup.selectAll('line.pointer').remove();
+
     this.pointerLine = this.pointerGroup
       .selectAll<SVGLineElement, number>('line.pointer')
       .data([angle])
@@ -243,7 +246,7 @@ export class GaugeRenderer {
       .attr('stroke', pointer.color)
       .attr('stroke-width', pointer.width)
       .attr('stroke-linecap', 'round')
-      // 指针的旋转直接由数据驱动，不受SVG分组的旋转影响
+      // 指针的旋转直接由数据驱动，现在指针组也有旋转变换
       .attr('transform', d => `rotate(${d})`);
 
     this.pointerGroup
