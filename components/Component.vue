@@ -12,7 +12,7 @@
       <button class="btn btn-greed" @click="updateValue(68)">贪婪 (68)</button>
       <button class="btn btn-extreme-greed" @click="updateValue(85)">极度贪婪 (85)</button>
     </div>
-    
+
     <!-- 仪表盘主体配置 -->
     <div class="controls">
       <button class="btn btn-config" @click="changeGaugeColor">改变仪表盘颜色</button>
@@ -21,7 +21,7 @@
       <button class="btn btn-config" @click="toggleGaugeBorder">切换仪表盘边框</button>
       <button class="btn btn-config" @click="changeGaugeOpacity">改变仪表盘透明度</button>
     </div>
-    
+
     <!-- 背景配置 -->
     <div class="controls">
       <button class="btn btn-backdrop" @click="changeBackgroundColor">改变背景颜色</button>
@@ -30,12 +30,12 @@
       <button class="btn btn-backdrop" @click="toggleBackgroundBorder">切换背景边框</button>
       <button class="btn btn-backdrop" @click="toggleBackgroundShow">显示/隐藏背景</button>
     </div>
-    
+
     <!-- 原有柱状图区域 -->
     <div class="container">
       <div class="title">空调产品-营收及占比趋势（示例数据）</div>
       <div id="chart" ref="chartRef"></div>
-      <div class="tooltip" ref="tooltipRef"></div>
+      <div ref="tooltipRef" class="tooltip"></div>
     </div>
     <div class="controls">
       <button class="btn" @click="updateData">更新数据</button>
@@ -49,50 +49,56 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import { BarChart } from './bar/BarChart';
-import type { BarChartData } from './bar/types/data';
-import type { BarChartConfig } from './bar/types/config';
-import { FinalGaugeChart } from './gauge/FinalGaugeChart';
+// import { BarChart } from './bar/BarChart';
+// import type { BarChartData } from './bar/types/data';
+// import type { BarChartConfig } from './bar/types/config';
+// import { FinalGaugeChart } from './gauge/FinalGaugeChart';
+import { D3GaugeChart } from './gauge/D3GaugeChart';
 
 // 图表容器引用
-const chartRef = ref<HTMLElement | null>(null);
+// const chartRef = ref<HTMLElement | null>(null);
 const gaugeChartRef = ref<HTMLElement | null>(null);
-const tooltipRef = ref<HTMLElement | null>(null);
+// const tooltipRef = ref<HTMLElement | null>(null);
 
 // 图表实例
-let chart: BarChart | null = null;
-let gaugeChart: FinalGaugeChart | null = null;
+// let chart: BarChart | null = null;
+// let gaugeChart: FinalGaugeChart | null = null;
+let d3GaugeChart: D3GaugeChart | null = null;
 
 // 仪表盘相关方法
 function updateValue(value: number) {
-  if (gaugeChart) {
-    gaugeChart.setValue(value);
+  if (d3GaugeChart) {
+    d3GaugeChart.setValue(value);
   }
 }
 
 // 仪表盘主体配置方法
 function changeGaugeColor() {
-  if (!gaugeChart) return;
+  if (!d3GaugeChart) {
+    return;
+  }
   const colors = ['#f5f5f5', '#e3f2fd', '#fff3e0', '#f1f8e9', '#fce4ec'];
   const randomColor = colors[Math.floor(Math.random() * colors.length)];
-  gaugeChart.updateConfig({
+  d3GaugeChart.updateConfig({
     gauge: {
-      ...gaugeChart.getConfig().gauge,
+      ...d3GaugeChart.getConfig().gauge,
       color: randomColor
     }
   });
 }
 
 function changeGaugeSize() {
-  if (!gaugeChart) return;
+  if (!d3GaugeChart) {
+    return;
+  }
   const outerRatios = [0.8, 0.9, 1.0, 1.1];
   const innerRatios = [0.5, 0.6, 0.65, 0.7];
   const outerRatio = outerRatios[Math.floor(Math.random() * outerRatios.length)];
   const innerRatio = innerRatios[Math.floor(Math.random() * innerRatios.length)];
-  
-  gaugeChart.updateConfig({
+
+  d3GaugeChart.updateConfig({
     gauge: {
-      ...gaugeChart.getConfig().gauge,
+      ...d3GaugeChart.getConfig().gauge,
       outerRadiusRatio: outerRatio,
       innerRadiusRatio: innerRatio
     }
@@ -100,7 +106,9 @@ function changeGaugeSize() {
 }
 
 function applyGaugeGradient() {
-  if (!gaugeChart) return;
+  if (!d3GaugeChart) {
+    return;
+  }
   const gradients = [
     ['#ff6b6b', '#4ecdc4'],
     ['#a8edea', '#fed6e3'],
@@ -109,27 +117,31 @@ function applyGaugeGradient() {
     ['#f093fb', '#f5576c']
   ];
   const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-  
-  gaugeChart.updateConfig({
+
+  d3GaugeChart.updateConfig({
     gauge: {
-      ...gaugeChart.getConfig().gauge,
+      ...d3GaugeChart.getConfig().gauge,
       color: randomGradient
     }
   });
 }
 
 function toggleGaugeBorder() {
-  if (!gaugeChart) return;
-  const currentConfig = gaugeChart.getConfig();
+  if (!d3GaugeChart) {
+    return;
+  }
+  const currentConfig = d3GaugeChart.getConfig();
   const newBorderShow = !currentConfig.gauge.border.show;
-  
-  gaugeChart.updateConfig({
+
+  d3GaugeChart.updateConfig({
     gauge: {
       ...currentConfig.gauge,
       border: {
         ...currentConfig.gauge.border,
         show: newBorderShow,
-        color: newBorderShow ? ['#ff4444', '#00aa44', '#0044aa'][Math.floor(Math.random() * 3)] : currentConfig.gauge.border.color,
+        color: newBorderShow
+          ? ['#ff4444', '#00aa44', '#0044aa'][Math.floor(Math.random() * 3)]
+          : currentConfig.gauge.border.color,
         width: newBorderShow ? Math.floor(Math.random() * 4) + 1 : currentConfig.gauge.border.width
       }
     }
@@ -137,13 +149,15 @@ function toggleGaugeBorder() {
 }
 
 function changeGaugeOpacity() {
-  if (!gaugeChart) return;
+  if (!d3GaugeChart) {
+    return;
+  }
   const opacities = [0.3, 0.5, 0.7, 0.9, 1.0];
   const randomOpacity = opacities[Math.floor(Math.random() * opacities.length)];
-  
-  gaugeChart.updateConfig({
+
+  d3GaugeChart.updateConfig({
     gauge: {
-      ...gaugeChart.getConfig().gauge,
+      ...d3GaugeChart.getConfig().gauge,
       opacity: randomOpacity
     }
   });
@@ -151,27 +165,31 @@ function changeGaugeOpacity() {
 
 // 背景配置方法
 function changeBackgroundColor() {
-  if (!gaugeChart) return;
+  if (!d3GaugeChart) {
+    return;
+  }
   const colors = ['#f8f9fa', '#e9ecef', '#dee2e6', '#ced4da', '#adb5bd'];
   const randomColor = colors[Math.floor(Math.random() * colors.length)];
-  gaugeChart.updateConfig({
+  d3GaugeChart.updateConfig({
     background: {
-      ...gaugeChart.getConfig().background,
+      ...d3GaugeChart.getConfig().background,
       color: randomColor
     }
   });
 }
 
 function changeBackgroundSize() {
-  if (!gaugeChart) return;
+  if (!d3GaugeChart) {
+    return;
+  }
   const outerRatios = [1.15, 1.2, 1.25, 1.3];
   const innerRatios = [0.4, 0.45, 0.5, 0.55];
   const outerRatio = outerRatios[Math.floor(Math.random() * outerRatios.length)];
   const innerRatio = innerRatios[Math.floor(Math.random() * innerRatios.length)];
-  
-  gaugeChart.updateConfig({
+
+  d3GaugeChart.updateConfig({
     background: {
-      ...gaugeChart.getConfig().background,
+      ...d3GaugeChart.getConfig().background,
       outerRadiusRatio: outerRatio,
       innerRadiusRatio: innerRatio
     }
@@ -179,7 +197,9 @@ function changeBackgroundSize() {
 }
 
 function applyBackgroundGradient() {
-  if (!gaugeChart) return;
+  if (!d3GaugeChart) {
+    return;
+  }
   const gradients = [
     ['#f8f9fa', '#e9ecef'],
     ['#e3f2fd', '#bbdefb'],
@@ -188,39 +208,47 @@ function applyBackgroundGradient() {
     ['#fce4ec', '#f8bbd9']
   ];
   const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-  
-  gaugeChart.updateConfig({
+
+  d3GaugeChart.updateConfig({
     background: {
-      ...gaugeChart.getConfig().background,
+      ...d3GaugeChart.getConfig().background,
       color: randomGradient
     }
   });
 }
 
 function toggleBackgroundBorder() {
-  if (!gaugeChart) return;
-  const currentConfig = gaugeChart.getConfig();
+  if (!d3GaugeChart) {
+    return;
+  }
+  const currentConfig = d3GaugeChart.getConfig();
   const newBorderShow = !currentConfig.background.border.show;
-  
-  gaugeChart.updateConfig({
+
+  d3GaugeChart.updateConfig({
     background: {
       ...currentConfig.background,
       border: {
         ...currentConfig.background.border,
         show: newBorderShow,
-        color: newBorderShow ? ['#6c757d', '#495057', '#343a40'][Math.floor(Math.random() * 3)] : currentConfig.background.border.color,
-        width: newBorderShow ? Math.floor(Math.random() * 3) + 1 : currentConfig.background.border.width
+        color: newBorderShow
+          ? ['#6c757d', '#495057', '#343a40'][Math.floor(Math.random() * 3)]
+          : currentConfig.background.border.color,
+        width: newBorderShow
+          ? Math.floor(Math.random() * 3) + 1
+          : currentConfig.background.border.width
       }
     }
   });
 }
 
 function toggleBackgroundShow() {
-  if (!gaugeChart) return;
-  const currentConfig = gaugeChart.getConfig();
+  if (!d3GaugeChart) {
+    return;
+  }
+  const currentConfig = d3GaugeChart.getConfig();
   const newShow = !currentConfig.background.show;
-  
-  gaugeChart.updateConfig({
+
+  d3GaugeChart.updateConfig({
     background: {
       ...currentConfig.background,
       show: newShow
@@ -229,7 +257,7 @@ function toggleBackgroundShow() {
 }
 
 // 当前选中的索引
-let currentSelectedIndex = ref<number | null>(null);
+const currentSelectedIndex = ref<number | null>(null);
 
 // 示例数据
 const sampleData: BarChartData[] = [
@@ -275,11 +303,13 @@ const chartConfig: Partial<BarChartConfig> = {
 
 // 初始化仪表盘
 const initGaugeChart = () => {
-  if (!gaugeChartRef.value) return;
-  
+  if (!gaugeChartRef.value) {
+    return;
+  }
+
   try {
-    // 创建最终版仪表盘实例
-    gaugeChart = new FinalGaugeChart(gaugeChartRef.value, {
+    // 创建D3仪表盘实例
+    d3GaugeChart = new D3GaugeChart(gaugeChartRef.value, {
       width: 400,
       height: 300,
       segments: [
@@ -290,99 +320,99 @@ const initGaugeChart = () => {
         { min: 75, max: 100, color: '#44ff44', label: 'Extreme Greed' }
       ]
     });
-    
+
     // 设置初始数据
-    gaugeChart.setData({ value: 68, label: 'Greed' });
-    
-    console.log('仪表盘初始化成功');
-    console.log('Canvas元素:', gaugeChartRef.value?.querySelector('canvas'));
+    d3GaugeChart.setData({ value: 68, label: 'Greed' });
+
+    console.log('D3 仪表盘初始化成功');
   } catch (error) {
-    console.error('仪表盘初始化失败:', error);
+    console.error('D3 仪表盘初始化失败:', error);
   }
 };
 
 // 初始化图表
 const initChart = () => {
-  if (!chartRef.value) return;
-  
-  // 创建图表实例
-  chart = new BarChart(chartRef.value, chartConfig);
-  
-  // 设置数据
-  chart.setData(sampleData);
-  
-  // 绑定事件
-  chart.on('barHover', (data: BarChartData, index: number) => {
-    if (!tooltipRef.value || !data) return;
-    
-    tooltipRef.value.style.display = 'block';
-    tooltipRef.value.innerHTML = `
-      <div>类别：${data.name}</div>
-      <div>数值：${data.value}</div>
-    `;
-  });
-  
-  chart.on('barHoverOut', () => {
-    if (!tooltipRef.value) return;
-    tooltipRef.value.style.display = 'none';
-  });
-  
-  chart.on('barClick', (data: BarChartData, index: number) => {
-    console.log('点击柱子:', data);
-    currentSelectedIndex.value = currentSelectedIndex.value === index ? null : index;
-  });
-  
-  chart.on('selectionChanged', (data: BarChartData | null, index: number | null) => {
-    console.log('选中状态变化:', data);
-    currentSelectedIndex.value = index;
-  });
+  // if (!chartRef.value) return;
+  // // 创建图表实例
+  // chart = new BarChart(chartRef.value, chartConfig);
+  // // 设置数据
+  // chart.setData(sampleData);
+  // // 绑定事件
+  // chart.on('barHover', (data: BarChartData, index: number) => {
+  //   if (!tooltipRef.value || !data) return;
+  //   tooltipRef.value.style.display = 'block';
+  //   tooltipRef.value.innerHTML = `
+  //     <div>类别：${data.name}</div>
+  //     <div>数值：${data.value}</div>
+  //   `;
+  // });
+  // chart.on('barHoverOut', () => {
+  //   if (!tooltipRef.value) return;
+  //   tooltipRef.value.style.display = 'none';
+  // });
+  // chart.on('barClick', (data: BarChartData, index: number) => {
+  //   console.log('点击柱子:', data);
+  //   currentSelectedIndex.value = currentSelectedIndex.value === index ? null : index;
+  // });
+  // chart.on('selectionChanged', (data: BarChartData | null, index: number | null) => {
+  //   console.log('选中状态变化:', data);
+  //   currentSelectedIndex.value = index;
+  // });
 };
 
 // 更新数据
 const updateData = () => {
-  if (!chart) return;
-  
-  const newData = sampleData.map(item => ({
-    ...item,
-    value: Math.floor(Math.random() * 600 + 200)
-  }));
-  
-  chart.setData(newData);
+  // if (!chart) return;
+
+  // const newData = sampleData.map(item => ({
+  //   ...item,
+  //   value: Math.floor(Math.random() * 600 + 200)
+  // }));
+
+  // chart.setData(newData);
+  updateValue(Math.random() * 100);
 };
 
 // 切换选中状态
 const toggleSelection = () => {
-  if (!chart) return;
-  const newIndex = currentSelectedIndex.value === null ? 0 : (currentSelectedIndex.value + 1) % sampleData.length;
-  chart.emit('barClick', sampleData[newIndex], newIndex);
+  // if (!chart) return;
+  // const newIndex = currentSelectedIndex.value === null ? 0 : (currentSelectedIndex.value + 1) % sampleData.length;
+  // chart.emit('barClick', sampleData[newIndex], newIndex);
 };
 
 // 调整大小
 const resize = () => {
-  if (!chart) return;
-  chart.resize();
+  // if (!chart) return;
+  // chart.resize();
+  if (d3GaugeChart) {
+    d3GaugeChart.resize();
+  }
 };
 
 // 清空图表
 const clear = () => {
-  if (!chart) return;
-  chart.clear();
-  currentSelectedIndex.value = null;
+  // if (!chart) return;
+  // chart.clear();
+  // currentSelectedIndex.value = null;
 };
 
 // 销毁图表
 const destroy = () => {
-  if (!chart) return;
-  chart.destroy();
-  chart = null;
-  currentSelectedIndex.value = null;
+  // if (!chart) return;
+  // chart.destroy();
+  // chart = null;
+  // currentSelectedIndex.value = null;
+  if (d3GaugeChart) {
+    d3GaugeChart.destroy();
+    d3GaugeChart = null;
+  }
 };
 
 // 生命周期钩子
 onMounted(() => {
-  initChart();
+  // initChart();
   initGaugeChart();
-  
+
   // 监听窗口大小变化
   window.addEventListener('resize', resize);
 });
@@ -390,17 +420,17 @@ onMounted(() => {
 onUnmounted(() => {
   // 移除事件监听
   window.removeEventListener('resize', resize);
-  
-  // 销毁图表
-  if (chart) {
-    chart.destroy();
-    chart = null;
-  }
-  
+
+  // // 销毁图表
+  // if (chart) {
+  //   chart.destroy();
+  //   chart = null;
+  // }
+
   // 销毁仪表盘
-  if (gaugeChart) {
-    gaugeChart.destroy();
-    gaugeChart = null;
+  if (d3GaugeChart) {
+    d3GaugeChart.destroy();
+    d3GaugeChart = null;
   }
 });
 </script>
@@ -518,7 +548,7 @@ onUnmounted(() => {
 .btn-extreme-greed:hover {
   background: linear-gradient(135deg, #22dd22, #44ff44);
 }
-  
+
 .btn-config {
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
