@@ -101,7 +101,9 @@ export class GaugeLayoutCalculator {
    */
   public calculateTicks(): TickData[] {
     const { ticks, range } = this.config;
-    if (!ticks.show) {
+    console.log('ticks: ', ticks);
+    // 修改条件：只要刻度线显示或标签显示，就生成刻度数据
+    if (!ticks.show && !ticks.label.show) {
       return [];
     }
 
@@ -129,15 +131,21 @@ export class GaugeLayoutCalculator {
       let labelX;
       let labelY;
       if (isMain && ticks.label.show) {
-        // 计算标签位置
-        const labelRadius =
-          ticks.label.position === 'outer'
-            ? endRadius + ticks.label.offset
-            : startRadius - ticks.label.offset;
+        if (ticks.label.position === 'inner') {
+          // inner位置：保持环形布局，但投影到内圆下方区域
+          // 使用与其他元素一致的角度变换
+          const adjustedAngleForInner = angle - Math.PI;
+          const baseRadius = gauge.innerRadius * 0.6; // 内圆下方的半径
+          const offsetY = gauge.innerRadius * 0.1; // 向下偏移
 
-        // 生成相对于中心点的坐标 (移除centerX, centerY)
-        labelX = Math.cos(angle) * labelRadius;
-        labelY = Math.sin(angle) * labelRadius;
+          labelX = Math.cos(adjustedAngleForInner) * baseRadius;
+          labelY = Math.sin(adjustedAngleForInner) * baseRadius;
+        } else {
+          // outer位置：保持原有的圆弧分布
+          const labelRadius = endRadius + ticks.label.offset;
+          labelX = Math.cos(angle) * labelRadius;
+          labelY = Math.sin(angle) * labelRadius;
+        }
       }
 
       // 为了与D3 arc生成器保持一致，需要调整手动坐标计算的角度
@@ -147,16 +155,15 @@ export class GaugeLayoutCalculator {
       let adjustedLabelX;
       let adjustedLabelY;
       if (labelX !== undefined && labelY !== undefined) {
-        adjustedLabelX =
-          Math.cos(adjustedAngle) *
-          (ticks.label.position === 'outer'
-            ? endRadius + ticks.label.offset
-            : endRadius - (isMain ? ticks.mainLength : ticks.length) - ticks.label.offset);
-        adjustedLabelY =
-          Math.sin(adjustedAngle) *
-          (ticks.label.position === 'outer'
-            ? endRadius + ticks.label.offset
-            : endRadius - (isMain ? ticks.mainLength : ticks.length) - ticks.label.offset);
+        if (ticks.label.position === 'inner') {
+          // inner位置：使用直接计算的坐标，不需要旋转变换
+          adjustedLabelX = labelX;
+          adjustedLabelY = labelY;
+        } else {
+          // outer位置：保持原有计算方式
+          adjustedLabelX = Math.cos(adjustedAngle) * (endRadius + ticks.label.offset);
+          adjustedLabelY = Math.sin(adjustedAngle) * (endRadius + ticks.label.offset);
+        }
       }
 
       tickData.push({
@@ -171,6 +178,7 @@ export class GaugeLayoutCalculator {
       });
     }
 
+    console.log('tickData: ', tickData);
     return tickData;
   }
 

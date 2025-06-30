@@ -180,48 +180,82 @@ export class GaugeRenderer {
 
   /**
    * 渲染刻度
-   * 这里的逻辑和渲染数据段类似，只是创建的是<line>和<text>元素
+   * 分别控制刻度线和标签的显示
    */
   public renderTicks(ticks: TickData[]): void {
-    // 渲染刻度线
-    this.gaugeGroup
-      .selectAll<SVGLineElement, TickData>('line.tick-line')
-      .data(ticks)
-      .join('line')
-      .attr('class', 'tick-line')
-      .attr('x1', d => d.x) // 直接使用预计算的坐标
-      .attr('y1', d => d.y) // 直接使用预计算的坐标
-      .attr('x2', d => {
-        const tickLength = d.isMain ? this.config.ticks.mainLength : this.config.ticks.length;
-        // 计算内端点：从外圆心向内缩进tickLength
-        const innerRadius = this.layout.gauge.outerRadius - tickLength;
-        return Math.cos(d.angle) * innerRadius;
-      })
-      .attr('y2', d => {
-        const tickLength = d.isMain ? this.config.ticks.mainLength : this.config.ticks.length;
-        // 计算内端点：从外圆心向内缩进tickLength
-        const innerRadius = this.layout.gauge.outerRadius - tickLength;
-        return Math.sin(d.angle) * innerRadius;
-      })
-      .attr('stroke', this.config.ticks.color)
-      .attr('stroke-width', d =>
-        d.isMain ? this.config.ticks.mainWidth : this.config.ticks.width
-      );
+    // 分别控制刻度线的渲染
+    if (this.config.ticks.show) {
+      // 渲染刻度线
+      this.gaugeGroup
+        .selectAll<SVGLineElement, TickData>('line.tick-line')
+        .data(ticks)
+        .join('line')
+        .attr('class', 'tick-line')
+        .attr('x1', d => d.x) // 直接使用预计算的坐标
+        .attr('y1', d => d.y) // 直接使用预计算的坐标
+        .attr('x2', d => {
+          const tickLength = d.isMain ? this.config.ticks.mainLength : this.config.ticks.length;
+          // 计算内端点：从外圆心向内缩进tickLength
+          const innerRadius = this.layout.gauge.outerRadius - tickLength;
+          return Math.cos(d.angle) * innerRadius;
+        })
+        .attr('y2', d => {
+          const tickLength = d.isMain ? this.config.ticks.mainLength : this.config.ticks.length;
+          // 计算内端点：从外圆心向内缩进tickLength
+          const innerRadius = this.layout.gauge.outerRadius - tickLength;
+          return Math.sin(d.angle) * innerRadius;
+        })
+        .attr('stroke', this.config.ticks.color)
+        .attr('stroke-width', d =>
+          d.isMain ? this.config.ticks.mainWidth : this.config.ticks.width
+        );
+    } else {
+      // 如果刻度线不显示，清除所有刻度线
+      this.gaugeGroup.selectAll<SVGLineElement, TickData>('line.tick-line').remove();
+    }
 
-    // 渲染刻度标签
-    this.gaugeGroup
-      .selectAll<SVGTextElement, TickData>('text.tick-label')
-      .data(ticks.filter(d => d.isMain && d.labelX !== undefined))
-      .join('text')
-      .attr('class', 'tick-label')
-      .attr('x', d => d.labelX!)
-      .attr('y', d => d.labelY!)
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'middle')
-      .style('font-size', `${this.config.ticks.label.fontSize}px`)
-      .style('font-family', this.config.ticks.label.fontFamily)
-      .attr('fill', this.config.ticks.label.color)
-      .text(d => d.value.toString());
+    // 分别控制刻度标签的渲染
+    if (this.config.ticks.label.show) {
+      const tickLabels = ticks.filter(d => d.isMain && d.labelX !== undefined);
+
+      if (this.config.ticks.label.position === 'inner') {
+        // inner位置：渲染到主SVG，避免旋转变换影响，文字保持水平
+        this.svg.selectAll<SVGTextElement, TickData>('text.tick-label').remove();
+        this.svg
+          .selectAll<SVGTextElement, TickData>('text.tick-label')
+          .data(tickLabels)
+          .join('text')
+          .attr('class', 'tick-label')
+          .attr('x', d => this.layout.centerX + d.labelX!)
+          .attr('y', d => this.layout.centerY + d.labelY!)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'middle')
+          .style('font-size', `${this.config.ticks.label.fontSize}px`)
+          .style('font-family', this.config.ticks.label.fontFamily)
+          .attr('fill', this.config.ticks.label.color)
+          .text(d => d.value.toString());
+      } else {
+        // outer位置：渲染到gaugeGroup，跟随旋转
+        this.svg.selectAll<SVGTextElement, TickData>('text.tick-label').remove();
+        this.gaugeGroup
+          .selectAll<SVGTextElement, TickData>('text.tick-label')
+          .data(tickLabels)
+          .join('text')
+          .attr('class', 'tick-label')
+          .attr('x', d => d.labelX!)
+          .attr('y', d => d.labelY!)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'middle')
+          .style('font-size', `${this.config.ticks.label.fontSize}px`)
+          .style('font-family', this.config.ticks.label.fontFamily)
+          .attr('fill', this.config.ticks.label.color)
+          .text(d => d.value.toString());
+      }
+    } else {
+      // 如果标签不显示，清除所有标签
+      this.svg.selectAll<SVGTextElement, TickData>('text.tick-label').remove();
+      this.gaugeGroup.selectAll<SVGTextElement, TickData>('text.tick-label').remove();
+    }
   }
 
   /**

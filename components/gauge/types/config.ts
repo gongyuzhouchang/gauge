@@ -192,10 +192,10 @@ export const DEFAULT_CONFIG: GaugeConfig = {
     angleOffset: 0.05
   },
   ticks: {
-    show: true,
+    show: false,
     color: '#999',
     count: 10,
-    mainTickEvery: 5,
+    mainTickEvery: 10,
     length: 4,
     mainLength: 8,
     width: 1,
