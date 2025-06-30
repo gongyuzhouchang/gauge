@@ -273,3 +273,158 @@ interface GaugeConfig {
 
 ### 事件
 暂无事件系统，将来可扩展添加点击、悬停等事件支持。 
+
+# D3仪表盘组件
+
+一个基于D3.js的高性能、可定制仪表盘组件，支持线条指针和图片指针两种样式。
+
+## 特性
+
+- 支持多段颜色配置
+- 灵活的刻度和标签系统
+- 平滑的动画效果
+- **NEW**: 支持自定义图片指针
+- 响应式布局
+- TypeScript支持
+
+## 图片指针功能
+
+### 配置说明
+
+新增的图片指针功能允许您使用base64编码的图片或普通图片链接来自定义指针样式。
+
+```typescript
+const gaugeConfig: GaugeConfig = {
+  // ... 其他配置
+  pointer: {
+    type: 'image', // 指定使用图片指针
+    length: 0.85, // 对于图片指针不生效
+    width: 4, // 对于图片指针不生效
+    color: '#333', // 对于图片指针不生效
+    shadow: {
+      enable: true,
+      offsetX: 2,
+      offsetY: 2,
+      blur: 4,
+      color: 'rgba(0, 0, 0, 0.3)'
+    },
+    image: {
+      // base64图片或图片URL
+      src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      width: 30, // 图片宽度（像素）
+      height: 100, // 图片高度（像素）
+      offsetX: -15, // X轴偏移量（通常设为宽度的一半实现水平居中）
+      offsetY: -90, // Y轴偏移量（调整图片相对于旋转中心的位置）
+    }
+  }
+  // ... 其他配置
+};
+```
+
+### 使用线条指针
+
+如果您想继续使用传统的线条指针：
+
+```typescript
+const gaugeConfig: GaugeConfig = {
+  // ... 其他配置
+  pointer: {
+    type: 'line', // 指定使用线条指针
+    length: 0.85,
+    width: 4,
+    color: '#333',
+    shadow: {
+      enable: true,
+      offsetX: 2,
+      offsetY: 2,
+      blur: 2,
+      color: 'rgba(0, 0, 0, 0.2)'
+    },
+    image: {
+      src: '',
+      width: 20,
+      height: 80,
+      offsetX: -10,
+      offsetY: -70
+    }
+  }
+  // ... 其他配置
+};
+```
+
+### 图片指针定位说明
+
+- `offsetX`: 控制图片在X轴上的偏移量，通常设置为图片宽度的负一半来实现水平居中
+- `offsetY`: 控制图片在Y轴上的偏移量，负值表示向上偏移，用于将指针的"指向端"对准数值
+  - 这样可以确保图片指针与线条指针有相同的角度行为
+
+### 示例：自定义指针图片
+
+```typescript
+// 使用向上箭头图片作为指针
+const arrowPointerConfig = {
+  type: 'image',
+  image: {
+    src: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCAyMCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDAgTCAyMCA4MCBMIDAgODAgWiIgZmlsbD0iIzMzMyIvPgo8L3N2Zz4K',
+    width: 20,
+    height: 80,
+    offsetX: -10,
+    offsetY: -75,
+  },
+  shadow: {
+    enable: true,
+    offsetX: 2,
+    offsetY: 2,
+    blur: 4,
+    color: 'rgba(0, 0, 0, 0.3)'
+  }
+};
+
+// 使用向右箭头图片作为指针
+const rightArrowConfig = {
+  type: 'image',
+  image: {
+    src: 'data:image/svg+xml;base64,...', // 向右设计的箭头
+    width: 80,
+    height: 20,
+    offsetX: -75,
+    offsetY: -10,
+  }
+};
+```
+
+### 工具函数
+
+组件还提供了一些实用的图片处理工具函数：
+
+```typescript
+import { isValidBase64Image, preloadImage, getImageDimensions } from './utils/image';
+
+// 验证base64图片格式
+const isValid = isValidBase64Image('data:image/png;base64,...');
+
+// 预加载图片
+preloadImage('your-image-url').then(img => {
+  console.log('图片加载完成', img);
+});
+
+// 获取图片尺寸
+getImageDimensions('your-image-url').then(({ width, height }) => {
+  console.log('图片尺寸:', width, height);
+});
+```
+
+## 基本用法
+
+```typescript
+import { D3GaugeChart } from './D3GaugeChart';
+
+const container = document.getElementById('gauge-container');
+const gauge = new D3GaugeChart(container, gaugeConfig);
+
+// 设置数值
+gauge.setValue(75);
+
+// 更新配置
+gauge.updateConfig(newConfig);
+```

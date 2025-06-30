@@ -21,6 +21,14 @@
       <button class="btn btn-test" @click="updateValue(75)">测试边界值 (75)</button>
     </div>
 
+    <!-- 指针配置 -->
+    <div class="controls">
+      <button class="btn btn-pointer" @click="useLinePointer">使用线条指针</button>
+      <button class="btn btn-pointer" @click="useArrowPointer">使用箭头指针</button>
+      <button class="btn btn-pointer" @click="useNeedlePointer">使用指针图片</button>
+      <button class="btn btn-pointer" @click="togglePointerShadow">切换指针阴影</button>
+    </div>
+
     <!-- 仪表盘主体配置 -->
     <div class="controls">
       <button class="btn btn-config" @click="changeGaugeColor">改变仪表盘颜色</button>
@@ -193,6 +201,90 @@ function changeGaugeOpacity() {
     gauge: {
       ...d3GaugeChart.getConfig().gauge,
       opacity: randomOpacity
+    }
+  });
+}
+
+// 指针配置方法
+function useLinePointer() {
+  if (!d3GaugeChart) {
+    return;
+  }
+  d3GaugeChart.updateConfig({
+    pointer: {
+      ...d3GaugeChart.getConfig().pointer,
+      type: 'line'
+    }
+  });
+}
+
+function useArrowPointer() {
+  if (!d3GaugeChart) {
+    return;
+  }
+  // 创建一个简单的箭头SVG
+  const arrowSvg = `
+    <svg width="20" height="80" viewBox="0 0 20 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 0 L 20 80 L 0 80 Z" fill="#333" stroke="#111" stroke-width="1"/>
+    </svg>
+  `;
+  const base64Arrow = btoa(arrowSvg);
+  
+  d3GaugeChart.updateConfig({
+    pointer: {
+      ...d3GaugeChart.getConfig().pointer,
+      type: 'image',
+      image: {
+        src: `data:image/svg+xml;base64,${base64Arrow}`,
+        width: 20,
+        height: 80,
+        offsetX: -10,
+        offsetY: -75,
+      }
+    }
+  });
+}
+
+function useNeedlePointer() {
+  if (!d3GaugeChart) {
+    return;
+  }
+  // 创建一个指针形状的SVG
+  const needleSvg = `
+    <svg width="16" height="100" viewBox="0 0 16 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 0 L 12 90 L 8 100 L 4 90 Z" fill="#e74c3c" stroke="#c0392b" stroke-width="1"/>
+      <circle cx="8" cy="90" r="3" fill="#34495e"/>
+    </svg>
+  `;
+  const base64Needle = btoa(needleSvg);
+  
+  d3GaugeChart.updateConfig({
+    pointer: {
+      ...d3GaugeChart.getConfig().pointer,
+      type: 'image',
+      image: {
+        src: `data:image/svg+xml;base64,${base64Needle}`,
+        width: 16,
+        height: 100,
+        offsetX: -8,
+        offsetY: -95
+      }
+    }
+  });
+}
+
+function togglePointerShadow() {
+  if (!d3GaugeChart) {
+    return;
+  }
+  const currentConfig = d3GaugeChart.getConfig();
+  d3GaugeChart.updateConfig({
+    pointer: {
+      ...currentConfig.pointer,
+      shadow: {
+        ...currentConfig.pointer.shadow,
+        enable: !currentConfig.pointer.shadow.enable
+      }
     }
   });
 }
@@ -616,6 +708,18 @@ onUnmounted(() => {
 
 .btn-test:hover {
   background: linear-gradient(135deg, #7eb76a, #91cc75);
+  transform: translateY(-2px);
+}
+
+.btn-pointer {
+  background: linear-gradient(135deg, #ffecd2, #fcb69f);
+  color: #333;
+  font-size: 12px;
+  padding: 8px 12px;
+}
+
+.btn-pointer:hover {
+  background: linear-gradient(135deg, #fcb69f, #ff9a8b);
   transform: translateY(-2px);
 }
 </style>

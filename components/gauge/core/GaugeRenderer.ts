@@ -28,6 +28,19 @@ export class GaugeRenderer {
 
   private pointerLine!: Selection<SVGLineElement, number, SVGGElement, unknown>;
 
+  private pointerImage!: Selection<SVGImageElement, number, SVGGElement, unknown>;
+
+  // 常量定义
+  private static readonly STROKE_COLOR = '#fff';
+
+  private static readonly STROKE_WIDTH = 2;
+
+  private static readonly TEXT_ANCHOR_MIDDLE = 'middle';
+
+  private static readonly DOMINANT_BASELINE_MIDDLE = 'middle';
+
+  private static readonly TICK_LABEL_CLASS = 'text.tick-label';
+
   /**
    * D3 选择集 (Selection) 详解:
    *
@@ -61,22 +74,26 @@ export class GaugeRenderer {
     // 为仪表盘主体和标签应用-90度旋转，以创建上半圆效果
     const rotatedTransform = `${baseTransform} rotate(-90)`;
 
+    // 使用旋转
     this.backgroundGroup = this.svg
       .append('g')
       .attr('class', 'gauge-background')
-      .attr('transform', rotatedTransform); // 使用旋转
+      .attr('transform', rotatedTransform);
+    // 使用旋转
     this.gaugeGroup = this.svg
       .append('g')
       .attr('class', 'gauge-main')
-      .attr('transform', rotatedTransform); // 使用旋转
+      .attr('transform', rotatedTransform);
+    // 指针组回到基础变换，只有translate
     this.pointerGroup = this.svg
       .append('g')
       .attr('class', 'gauge-pointer')
-      .attr('transform', baseTransform); // 指针组回到基础变换，只有translate
+      .attr('transform', baseTransform);
+    // 使用旋转
     this.labelsGroup = this.svg
       .append('g')
       .attr('class', 'gauge-labels')
-      .attr('transform', rotatedTransform); // 使用旋转
+      .attr('transform', rotatedTransform);
   }
 
   /**
@@ -264,61 +281,134 @@ export class GaugeRenderer {
    */
   public renderPointer(value: number, angle: number): void {
     const { pointer, centerCircle } = this.config;
-    const pointerLength = this.layout.gauge.innerRadius * pointer.length;
 
     // 强制清除旧的指针元素
     this.pointerGroup.selectAll('line.pointer').remove();
+    this.pointerGroup.selectAll('image.pointer').remove();
 
-    this.pointerLine = this.pointerGroup
-      .selectAll<SVGLineElement, number>('line.pointer')
-      .data([angle])
-      .join('line')
-      .attr('class', 'pointer')
-      .attr('x1', 0)
-      .attr('y1', 0)
-      .attr('x2', pointerLength)
-      .attr('y2', 0)
-      .attr('stroke', pointer.color)
-      .attr('stroke-width', pointer.width)
-      .attr('stroke-linecap', 'round')
-      // 指针的旋转直接由数据驱动，现在指针组也有旋转变换
-      .attr('transform', d => `rotate(${d})`);
+    if (pointer.type === 'line') {
+      // 渲染线条指针（原有逻辑）
+      const pointerLength = this.layout.gauge.innerRadius * pointer.length;
 
-    this.pointerGroup
-      .selectAll('circle.center-circle')
-      .data([1])
-      .join('circle')
-      .attr('class', 'center-circle')
-      .attr('r', centerCircle.radius)
-      .attr('fill', centerCircle.gradient.end)
-      .attr('stroke', centerCircle.borderColor)
-      .attr('stroke-width', centerCircle.lineWidth);
+      this.pointerLine = this.pointerGroup
+        .selectAll<SVGLineElement, number>('line.pointer')
+        .data([angle])
+        .join('line')
+        .attr('class', 'pointer')
+        .attr('x1', 0)
+        .attr('y1', 0)
+        .attr('x2', pointerLength)
+        .attr('y2', 0)
+        .attr('stroke', pointer.color)
+        .attr('stroke-width', pointer.width)
+        .attr('stroke-linecap', 'round')
+        .attr('transform', d => `rotate(${d})`);
+
+      // 渲染中心圆
+      this.pointerGroup
+        .selectAll('circle.center-circle')
+        .data([1])
+        .join('circle')
+        .attr('class', 'center-circle')
+        .attr('r', centerCircle.radius)
+        .attr('fill', centerCircle.gradient.end)
+        .attr('stroke', centerCircle.borderColor)
+        .attr('stroke-width', centerCircle.lineWidth);
+
+      // 添加阴影效果
+      if (pointer.shadow.enable) {
+        this.pointerLine.attr(
+          'filter',
+          'drop-shadow(' +
+            `${pointer.shadow.offsetX}px ${pointer.shadow.offsetY}px ` +
+            `${pointer.shadow.blur}px ${pointer.shadow.color})`
+        );
+      }
+    } else if (pointer.type === 'image' && pointer.image.src) {
+      // 渲染图片指针
+      this.pointerImage = this.pointerGroup
+        .selectAll<SVGImageElement, number>('image.pointer')
+        .data([angle])
+        .join('image')
+        .attr('class', 'pointer')
+        .attr('href', pointer.image.src)
+        .attr('width', pointer.image.width)
+        .attr('height', pointer.image.height)
+        .attr('x', pointer.image.offsetX)
+        .attr('y', pointer.image.offsetY)
+        .attr('transform', d => `rotate(${d + 90})`);
+
+      // 添加阴影效果
+      if (pointer.shadow.enable) {
+        this.pointerImage.attr(
+          'filter',
+          'drop-shadow(' +
+            `${pointer.shadow.offsetX}px ${pointer.shadow.offsetY}px ` +
+            `${pointer.shadow.blur}px ${pointer.shadow.color})`
+        );
+      }
+    }
   }
 
   public updatePointer(newAngle: number): void {
-    const transition = this.animator.getTransition(this.pointerLine);
+    const { pointer } = this.config;
 
-    this.pointerLine.data([newAngle]);
+    if (pointer.type === 'line' && this.pointerLine) {
+      // 更新线条指针
+      const transition = this.animator.getTransition(this.pointerLine);
+      this.pointerLine.data([newAngle]);
 
-    transition.attrTween('transform', (d, i, a) => {
-      const element = select(a[i]);
-      const currentTransform = element.attr('transform') || 'rotate(0)';
-      const currentAngle = parseFloat(currentTransform.replace(/rotate\(|\)/g, ''));
+      transition.attrTween('transform', (d, i, a) => {
+        const element = select(a[i]);
+        const currentTransform = element.attr('transform') || 'rotate(0)';
+        const currentAngle = parseFloat(currentTransform.replace(/rotate\(|\)/g, ''));
+        const interpolator = interpolate(currentAngle, d);
 
-      const interpolator = interpolate(currentAngle, d);
+        return (t: number) => {
+          const interpolatedAngle = interpolator(t);
+          return `rotate(${interpolatedAngle})`;
+        };
+      });
+    } else if (pointer.type === 'image' && this.pointerImage) {
+      // 更新图片指针
+      const transition = this.animator.getTransition(this.pointerImage);
+      this.pointerImage.data([newAngle]);
 
-      return (t: number) => {
-        const interpolatedAngle = interpolator(t);
-        return `rotate(${interpolatedAngle})`;
-      };
-    });
+      transition.attrTween('transform', (d, i, a) => {
+        const element = select(a[i]);
+        const currentTransform = element.attr('transform') || 'rotate(0)';
+        const currentAngle = parseFloat(currentTransform.replace(/rotate\(|\)/g, ''));
+        const targetAngle = d + 90;
+        const interpolator = interpolate(currentAngle, targetAngle);
+
+        return (t: number) => {
+          const interpolatedAngle = interpolator(t);
+          return `rotate(${interpolatedAngle})`;
+        };
+      });
+    }
   }
 
   /**
    * 获取指针的D3选择集
    */
-  public getPointerSelection(): Selection<SVGLineElement, number, SVGGElement, unknown> {
-    return this.pointerLine;
+  public getPointerSelection(): Selection<
+    SVGLineElement | SVGImageElement,
+    number,
+    SVGGElement,
+    unknown
+  > {
+    const { pointer } = this.config;
+
+    if (pointer.type === 'line') {
+      return this.pointerLine as any;
+    }
+    if (pointer.type === 'image') {
+      return this.pointerImage as any;
+    }
+
+    // 返回空选择集作为后备
+    return this.pointerGroup.selectAll('.pointer') as any;
   }
 
   /**

@@ -25,7 +25,10 @@ export interface GaugeConfig {
 
   // 指针配置
   pointer: {
-    length: number; // 0-1比例
+    // 指针类型：线条或图片
+    type: 'line' | 'image';
+    // 0-1比例
+    length: number;
     width: number;
     color: string;
     shadow: {
@@ -34,6 +37,18 @@ export interface GaugeConfig {
       offsetY: number;
       blur: number;
       color: string;
+    };
+    image: {
+      // base64图片链接或普通图片链接
+      src: string;
+      // 图片宽度
+      width: number;
+      // 图片高度
+      height: number;
+      // X轴偏移量（调整图片相对于旋转中心的位置）
+      offsetX: number;
+      // Y轴偏移量
+      offsetY: number;
     };
   };
 
@@ -164,6 +179,7 @@ export const DEFAULT_CONFIG: GaugeConfig = {
     { min: 75, max: 100, color: '#44ff44', label: 'Extreme Greed' }
   ],
   pointer: {
+    type: 'image',
     length: 0.85,
     width: 4,
     color: '#333',
@@ -173,6 +189,15 @@ export const DEFAULT_CONFIG: GaugeConfig = {
       offsetY: 2,
       blur: 2,
       color: 'rgba(0, 0, 0, 0.2)'
+    },
+    image: {
+      src: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIyNjEiIHZpZXdCb3g9IjAgMCAxNiAyNjEiIGZpbGw9Im5vbmUiPgo8cGF0aCBkPSJNNi45NzMwOSAxLjQ5OTYzQzYuOTg4MDcgMC45NDMyNDggNy40NDM0MSAwLjUgOCAwLjVDOC41NTY1OSAwLjUgOS4wMTE5MyAwLjk0MzI1NCA5LjAyNjkxIDEuNDk5NjRMMTUuNzg0NyAyNTIuNTAzQzE1LjkwMjcgMjU2Ljg4NCAxMi4zODMgMjYwLjUgOCAyNjAuNUMzLjYxNjk5IDI2MC41IDAuMDk3MzQ1MSAyNTYuODg0IDAuMjE1MzA3IDI1Mi41MDNMNi45NzMwOSAxLjQ5OTYzWiIgZmlsbD0iYmxhY2siLz4KPC9zdmc+',
+      width: 20,
+      height: 100,
+      // 图片宽度的一半，让图片水平居中
+      offsetX: -10,
+      // 大部分图片偏移到旋转中心上方
+      offsetY: -100
     }
   },
   text: {
