@@ -278,15 +278,15 @@ export const DEFAULT_CONFIG: GaugeConfig = {
     borderColor: '#222'
   },
   valueBox: {
-    offsetY: 50,
+    offsetY: -25,
     paddingX: 10,
     paddingY: 5,
-    bgColor: 'rgba(255, 255, 255, 0.9)',
+    bgColor: 'rgba(255, 255, 25, 0.9)',
     borderColor: '#ddd',
     borderWidth: 1,
     labelOffsetY: 5,
     font: {
-      size: 16,
+      size: 14,
       family: 'Arial, sans-serif'
     },
     paddingMultiplier: 2
