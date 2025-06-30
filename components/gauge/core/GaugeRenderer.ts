@@ -3,7 +3,7 @@
  * 负责将布局计算结果渲染为SVG元素
  */
 
-import { select, arc, interpolate, Selection, BaseType } from '../utils/d3-imports';
+import { select, arc, interpolate, Selection } from '../utils/d3-imports';
 import { GaugeAnimator } from './GaugeAnimator';
 import type { GaugeConfig } from '../types/config';
 import type { GaugeLayout, SegmentData, TickData } from '../types/data';
@@ -41,6 +41,10 @@ export class GaugeRenderer {
 
   private static readonly TICK_LABEL_CLASS = 'text.tick-label';
 
+  private static readonly ANGLE_OFFSET = 90;
+
+  private static readonly ROTATE_BASE_ANGLE = -90;
+
   /**
    * D3 选择集 (Selection) 详解:
    *
@@ -72,7 +76,7 @@ export class GaugeRenderer {
     // 设置变换，将(0,0)原点移动到仪表盘中心
     const baseTransform = `translate(${this.layout.centerX}, ${this.layout.centerY})`;
     // 为仪表盘主体和标签应用-90度旋转，以创建上半圆效果
-    const rotatedTransform = `${baseTransform} rotate(-90)`;
+    const rotatedTransform = `${baseTransform} rotate(${GaugeRenderer.ROTATE_BASE_ANGLE})`;
 
     // 使用旋转
     this.backgroundGroup = this.svg
@@ -191,9 +195,9 @@ export class GaugeRenderer {
       .attr('y1', angle => this.layout.gauge.innerRadius * Math.sin(angle))
       .attr('x2', angle => this.layout.gauge.outerRadius * Math.cos(angle))
       .attr('y2', angle => this.layout.gauge.outerRadius * Math.sin(angle))
-      .attr('stroke', '#fff')
-      .attr('stroke-width', 2)
-      .attr('transform', 'rotate(-90)');
+      .attr('stroke', GaugeRenderer.STROKE_COLOR)
+      .attr('stroke-width', GaugeRenderer.STROKE_WIDTH)
+      .attr('transform', `rotate(${GaugeRenderer.ROTATE_BASE_ANGLE})`);
   }
 
   /**
@@ -326,6 +330,26 @@ export class GaugeRenderer {
       }
     } else if (pointer.type === 'image' && pointer.image.src) {
       // 渲染图片指针
+      let offsetX;
+      let offsetY;
+
+      if (pointer.fromInnerEdge) {
+        // 从内环边开始指向外环
+        const { innerRadius } = this.layout.background;
+
+        // 像线条指针一样：图片在未旋转坐标系中从内环边开始
+        const innerOffsetY = innerRadius * Math.cos(Math.abs(90 + angle));
+        const innerOffsetX = innerRadius * Math.sin(Math.abs(90 + angle));
+        offsetX = innerOffsetX + pointer.image.offsetX;
+        offsetY = -innerOffsetY + pointer.image.offsetY;
+      } else {
+        // 从中心开始（原有逻辑）
+        // 根据pointer.length计算起点位置，与线条指针保持一致
+        const pointerLength = this.layout.gauge.innerRadius * pointer.length;
+        offsetX = pointerLength - pointer.image.width / 2 + pointer.image.offsetX;
+        offsetY = -pointer.image.height / 2 + pointer.image.offsetY;
+      }
+
       this.pointerImage = this.pointerGroup
         .selectAll<SVGImageElement, number>('image.pointer')
         .data([angle])
@@ -334,9 +358,9 @@ export class GaugeRenderer {
         .attr('href', pointer.image.src)
         .attr('width', pointer.image.width)
         .attr('height', pointer.image.height)
-        .attr('x', pointer.image.offsetX)
-        .attr('y', pointer.image.offsetY)
-        .attr('transform', d => `rotate(${d + 90})`);
+        .attr('x', offsetX)
+        .attr('y', offsetY)
+        .attr('transform', d => `rotate(${d + GaugeRenderer.ANGLE_OFFSET})`);
 
       // 添加阴影效果
       if (pointer.shadow.enable) {
@@ -378,7 +402,7 @@ export class GaugeRenderer {
         const element = select(a[i]);
         const currentTransform = element.attr('transform') || 'rotate(0)';
         const currentAngle = parseFloat(currentTransform.replace(/rotate\(|\)/g, ''));
-        const targetAngle = d + 90;
+        const targetAngle = d + GaugeRenderer.ANGLE_OFFSET;
         const interpolator = interpolate(currentAngle, targetAngle);
 
         return (t: number) => {

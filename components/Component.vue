@@ -27,6 +27,7 @@
       <button class="btn btn-pointer" @click="useArrowPointer">使用箭头指针</button>
       <button class="btn btn-pointer" @click="useNeedlePointer">使用指针图片</button>
       <button class="btn btn-pointer" @click="togglePointerShadow">切换指针阴影</button>
+      <button class="btn btn-pointer" @click="togglePointerOrigin">切换指针起点</button>
     </div>
 
     <!-- 仪表盘主体配置 -->
@@ -289,6 +290,19 @@ function togglePointerShadow() {
   });
 }
 
+function togglePointerOrigin() {
+  if (!d3GaugeChart) {
+    return;
+  }
+  const currentConfig = d3GaugeChart.getConfig();
+  d3GaugeChart.updateConfig({
+    pointer: {
+      ...currentConfig.pointer,
+      fromInnerEdge: !currentConfig.pointer.fromInnerEdge
+    }
+  });
+}
+
 // 背景配置方法
 function changeBackgroundColor() {
   if (!d3GaugeChart) {
@@ -448,7 +462,7 @@ const initGaugeChart = () => {
     });
 
     // 设置初始数据，标签将根据数值自动匹配对应区段
-    d3GaugeChart.setData({ value: 68 });
+    d3GaugeChart.setData({ value: 50 });
 
     console.log('D3 仪表盘初始化成功');
   } catch (error) {

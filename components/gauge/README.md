@@ -301,6 +301,7 @@ const gaugeConfig: GaugeConfig = {
     length: 0.85, // 对于图片指针不生效
     width: 4, // 对于图片指针不生效
     color: '#333', // 对于图片指针不生效
+    fromInnerEdge: true, // 🆕 指针是否从内环边开始向外指
     shadow: {
       enable: true,
       offsetX: 2,
@@ -333,6 +334,7 @@ const gaugeConfig: GaugeConfig = {
     length: 0.85,
     width: 4,
     color: '#333',
+    fromInnerEdge: false, // 从中心开始（传统模式）
     shadow: {
       enable: true,
       offsetX: 2,
@@ -343,9 +345,33 @@ const gaugeConfig: GaugeConfig = {
     image: {
       src: '',
       width: 20,
-      height: 80,
+      height: 100,
       offsetX: -10,
-      offsetY: -70
+      offsetY: -100
+    }
+  }
+  // ... 其他配置
+};
+```
+
+### 从内环边开始的指针
+
+创建更真实的仪表盘效果：
+
+```typescript
+const realisticGaugeConfig: GaugeConfig = {
+  // ... 其他配置
+  pointer: {
+    type: 'line',
+    width: 3,
+    color: '#e74c3c',
+    fromInnerEdge: true, // 🆕 从内环边开始向外指
+    shadow: {
+      enable: true,
+      offsetX: 1,
+      offsetY: 1,
+      blur: 3,
+      color: 'rgba(0, 0, 0, 0.4)'
     }
   }
   // ... 其他配置
@@ -428,3 +454,12 @@ gauge.setValue(75);
 // 更新配置
 gauge.updateConfig(newConfig);
 ```
+
+### 指针起点配置
+
+新增的 `fromInnerEdge` 配置可以控制指针的起点位置：
+
+- `fromInnerEdge: false` (默认): 指针从仪表盘中心开始
+- `fromInnerEdge: true`: 指针从内环边开始，延伸到外环边
+
+这个功能对于创建更真实的仪表盘效果特别有用，让指针看起来像是从表盘边缘延伸出来的。
