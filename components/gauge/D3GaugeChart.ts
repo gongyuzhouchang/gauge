@@ -61,7 +61,10 @@ export class D3GaugeChart {
     this.renderer.renderTicks(ticks);
     this.renderer.renderEndLabels();
     this.renderer.renderPointer(this.data.value, angle);
-    this.renderer.renderValueText(this.data.value, this.data.label || '');
+
+    // 自动获取当前数值对应的区段标签
+    const currentLabel = this.renderer.getCurrentSegmentLabel(this.data.value);
+    this.renderer.renderValueText(this.data.value, currentLabel);
   }
 
   private _updateDynamicElements(value: number): void {
@@ -70,7 +73,10 @@ export class D3GaugeChart {
     }
     const { angle } = this.layoutCalculator.calculatePointerPosition(value);
     this.renderer.updatePointer(angle);
-    this.renderer.updateValueText(value, this.data.label || '');
+
+    // 自动获取当前数值对应的区段标签
+    const currentLabel = this.renderer.getCurrentSegmentLabel(value);
+    this.renderer.updateValueText(value, currentLabel);
   }
 
   public setData(data: GaugeData): this {
@@ -106,6 +112,10 @@ export class D3GaugeChart {
 
   public getConfig(): GaugeConfig {
     return this.config;
+  }
+
+  public getCurrentSegmentLabel(value: number): string {
+    return this.renderer.getCurrentSegmentLabel(value);
   }
 
   public destroy(): void {

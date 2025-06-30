@@ -13,6 +13,14 @@
       <button class="btn btn-extreme-greed" @click="updateValue(85)">极度贪婪 (85)</button>
     </div>
 
+    <!-- 标签对应测试区域 -->
+    <div class="controls">
+      <button class="btn btn-test" @click="testLabelMapping">测试标签映射</button>
+      <button class="btn btn-test" @click="updateValue(30)">测试边界值 (30)</button>
+      <button class="btn btn-test" @click="updateValue(55)">测试边界值 (55)</button>
+      <button class="btn btn-test" @click="updateValue(75)">测试边界值 (75)</button>
+    </div>
+
     <!-- 仪表盘主体配置 -->
     <div class="controls">
       <button class="btn btn-config" @click="changeGaugeColor">改变仪表盘颜色</button>
@@ -70,6 +78,32 @@ function updateValue(value: number) {
   if (d3GaugeChart) {
     d3GaugeChart.setValue(value);
   }
+}
+
+// 测试标签映射的方法
+function testLabelMapping() {
+  if (!d3GaugeChart) {
+    return;
+  }
+
+  // 测试每个区段的标签映射
+  const testValues = [10, 30, 50, 60, 80];
+  let index = 0;
+
+  const testNext = () => {
+    if (index < testValues.length) {
+      const value = testValues[index];
+      console.log(
+        `测试数值 ${value}:`,
+        d3GaugeChart?.getCurrentSegmentLabel?.(value) || '获取标签失败'
+      );
+      d3GaugeChart?.setValue(value);
+      index++;
+      setTimeout(testNext, 1500); // 每1.5秒切换一次
+    }
+  };
+
+  testNext();
 }
 
 // 仪表盘主体配置方法
@@ -321,8 +355,8 @@ const initGaugeChart = () => {
       ]
     });
 
-    // 设置初始数据
-    d3GaugeChart.setData({ value: 68, label: 'Greed' });
+    // 设置初始数据，标签将根据数值自动匹配对应区段
+    d3GaugeChart.setData({ value: 68 });
 
     console.log('D3 仪表盘初始化成功');
   } catch (error) {
@@ -570,6 +604,18 @@ onUnmounted(() => {
 
 .btn-backdrop:hover {
   background: linear-gradient(135deg, #495057, #343a40);
+  transform: translateY(-2px);
+}
+
+.btn-test {
+  background: linear-gradient(135deg, #91cc75, #a7d68a);
+  color: white;
+  font-size: 12px;
+  padding: 8px 12px;
+}
+
+.btn-test:hover {
+  background: linear-gradient(135deg, #7eb76a, #91cc75);
   transform: translateY(-2px);
 }
 </style>

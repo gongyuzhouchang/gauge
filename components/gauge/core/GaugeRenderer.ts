@@ -463,4 +463,12 @@ export class GaugeRenderer {
     const segment = this.config.segments.find(s => value >= s.min && value <= s.max);
     return segment ? segment.color : this.config.text.color;
   }
+
+  /**
+   * 根据数值获取对应区段的标签
+   */
+  public getCurrentSegmentLabel(value: number): string {
+    const segment = this.config.segments.find(s => value >= s.min && value <= s.max);
+    return segment ? segment.label : '';
+  }
 }
