@@ -135,11 +135,11 @@ export class GaugeLayoutCalculator {
           // inner位置：保持环形布局，但投影到内圆下方区域
           // 使用与其他元素一致的角度变换
           const adjustedAngleForInner = angle - Math.PI;
-          const baseRadius = gauge.innerRadius * 0.6; // 内圆下方的半径
-          const offsetY = gauge.innerRadius * 0.1; // 向下偏移
+          const baseRadius = gauge.innerRadius * 0.8; // 内圆下方的半径
+          const offsetY = (ticks.label.fontSize || 10) * 0.5; // 向下偏移
 
           labelX = Math.cos(adjustedAngleForInner) * baseRadius;
-          labelY = Math.sin(adjustedAngleForInner) * baseRadius;
+          labelY = Math.sin(adjustedAngleForInner) * baseRadius - offsetY;
         } else {
           // outer位置：保持原有的圆弧分布
           const labelRadius = endRadius + ticks.label.offset;

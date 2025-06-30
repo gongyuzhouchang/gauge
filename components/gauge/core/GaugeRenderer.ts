@@ -175,7 +175,8 @@ export class GaugeRenderer {
       .attr('x2', angle => this.layout.gauge.outerRadius * Math.cos(angle))
       .attr('y2', angle => this.layout.gauge.outerRadius * Math.sin(angle))
       .attr('stroke', '#fff')
-      .attr('stroke-width', 2);
+      .attr('stroke-width', 2)
+      .attr('transform', 'rotate(-90)');
   }
 
   /**
