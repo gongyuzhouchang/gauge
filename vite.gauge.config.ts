@@ -18,8 +18,7 @@ export default defineConfig({
         'd3-interpolate',
         'd3-transition',
         'd3-ease',
-        'd3-color',
-        'lodash-es'
+        'd3-color'
       ],
       output: {
         globals: {
@@ -29,8 +28,7 @@ export default defineConfig({
           'd3-interpolate': 'd3',
           'd3-transition': 'd3',
           'd3-ease': 'd3',
-          'd3-color': 'd3',
-          'lodash-es': '_'
+          'd3-color': 'd3'
         },
         dir: 'dist/gauge/lean',
         // 启用代码分割以优化加载

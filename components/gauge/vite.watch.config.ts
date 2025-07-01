@@ -10,12 +10,10 @@ export default defineConfig({
       formats: ['umd', 'es']
     },
     rollupOptions: {
-      // 开发时只排除lodash，其他都打包进去方便调试
-      external: ['lodash-es'],
+      // 开发时将所有依赖都打包进去方便调试
+      external: [],
       output: {
-        globals: {
-          'lodash-es': '_'
-        },
+        globals: {},
         dir: '../dist/gauge/dev',
         exports: 'named'
       }

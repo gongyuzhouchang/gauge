@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import { resolve } from 'path';
 
 // 开发专用配置 - 支持热更新和源码调试
 export default defineConfig({
@@ -23,9 +23,8 @@ export default defineConfig({
   // 开发时的依赖处理
   optimizeDeps: {
     include: [
-      'lodash-es',
       'd3-selection',
-      'd3-scale', 
+      'd3-scale',
       'd3-shape',
       'd3-interpolate',
       'd3-transition',
@@ -42,4 +41,4 @@ export default defineConfig({
   define: {
     __DEV__: true
   }
-}) 
+});

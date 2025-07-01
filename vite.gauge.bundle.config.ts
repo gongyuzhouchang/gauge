@@ -10,12 +10,10 @@ export default defineConfig({
       formats: ['umd', 'es']
     },
     rollupOptions: {
-      // 只排除lodash-es，将d3相关模块全部打包进去
-      external: ['lodash-es'],
+      // 将d3相关模块全部打包进去
+      external: [],
       output: {
-        globals: {
-          'lodash-es': '_'
-        },
+        globals: {},
         dir: 'dist/gauge/bundle',
         exports: 'named'
       }

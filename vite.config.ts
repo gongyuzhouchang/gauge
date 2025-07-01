@@ -21,16 +21,10 @@ export default defineConfig({
   // 构建配置
   build: {
     rollupOptions: {
-      external: ['lodash-es'],
+      external: [],
       output: {
-        globals: {
-          'lodash-es': '_'
-        }
+        globals: {}
       }
     }
-  },
-  // 优化依赖预构建
-  optimizeDeps: {
-    include: ['lodash-es']
   }
 });

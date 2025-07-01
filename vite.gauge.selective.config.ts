@@ -10,12 +10,10 @@ export default defineConfig({
       formats: ['umd', 'es']
     },
     rollupOptions: {
-      // 只排除lodash-es，将需要的d3子模块打包进去
-      external: ['lodash-es'],
+      // 将所有d3子模块打包进去
+      external: [],
       output: {
-        globals: {
-          'lodash-es': '_'
-        },
+        globals: {},
         dir: 'dist/gauge/selective',
         exports: 'named'
       }
@@ -37,4 +35,4 @@ export default defineConfig({
   define: {
     'process.env.NODE_ENV': '"production"'
   }
-}); 
+});
