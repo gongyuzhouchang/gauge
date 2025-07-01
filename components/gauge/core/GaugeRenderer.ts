@@ -3,7 +3,8 @@
  * 负责将布局计算结果渲染为SVG元素
  */
 
-import { select, arc, interpolate, Selection } from '../utils/d3-imports';
+import type { DefaultArcObject } from 'd3-shape';
+import { select, arc, interpolate, Selection, type BaseType } from '../utils/d3-imports';
 import { GaugeAnimator } from './GaugeAnimator';
 import type { GaugeConfig } from '../types/config';
 import type { GaugeLayout, SegmentData, TickData } from '../types/data';
@@ -44,6 +45,9 @@ export class GaugeRenderer {
   private static readonly ANGLE_OFFSET = 90;
 
   private static readonly ROTATE_BASE_ANGLE = -90;
+
+  /** 公用二分因子，替代除以2的魔法数字 */
+  private static readonly HALF_DIVISOR = 2;
 
   /**
    * D3 选择集 (Selection) 详解:
@@ -116,11 +120,13 @@ export class GaugeRenderer {
       .startAngle(0)
       .endAngle(Math.PI);
 
+    // 使用预计算路径，移除 any
+    const backgroundPath = backgroundArc({} as DefaultArcObject) ?? '';
     this.backgroundGroup
       .selectAll('path')
       .data([1])
       .join('path')
-      .attr('d', backgroundArc as any)
+      .attr('d', backgroundPath)
       .attr('fill', background.color as string)
       .attr('opacity', background.opacity);
   }
@@ -141,12 +147,14 @@ export class GaugeRenderer {
       .startAngle(0)
       .endAngle(Math.PI);
 
+    // 使用预计算路径，移除 any
+    const gaugePath = gaugeArc({} as DefaultArcObject) ?? '';
     this.gaugeGroup
       .selectAll('path.gauge-base')
       .data([1])
       .join('path')
       .attr('class', 'gauge-base')
-      .attr('d', gaugeArc as any)
+      .attr('d', gaugePath)
       .attr('fill', gauge.color as string)
       .attr('opacity', gauge.opacity);
   }
@@ -250,8 +258,8 @@ export class GaugeRenderer {
           .attr('class', 'tick-label')
           .attr('x', d => this.layout.centerX + d.labelX!)
           .attr('y', d => this.layout.centerY + d.labelY!)
-          .attr('text-anchor', 'middle')
-          .attr('dominant-baseline', 'middle')
+          .attr('text-anchor', GaugeRenderer.TEXT_ANCHOR_MIDDLE)
+          .attr('dominant-baseline', GaugeRenderer.DOMINANT_BASELINE_MIDDLE)
           .style('font-size', `${this.config.ticks.label.fontSize}px`)
           .style('font-family', this.config.ticks.label.fontFamily)
           .attr('fill', this.config.ticks.label.color)
@@ -266,8 +274,8 @@ export class GaugeRenderer {
           .attr('class', 'tick-label')
           .attr('x', d => d.labelX!)
           .attr('y', d => d.labelY!)
-          .attr('text-anchor', 'middle')
-          .attr('dominant-baseline', 'middle')
+          .attr('text-anchor', GaugeRenderer.TEXT_ANCHOR_MIDDLE)
+          .attr('dominant-baseline', GaugeRenderer.DOMINANT_BASELINE_MIDDLE)
           .style('font-size', `${this.config.ticks.label.fontSize}px`)
           .style('font-family', this.config.ticks.label.fontFamily)
           .attr('fill', this.config.ticks.label.color)
@@ -338,16 +346,17 @@ export class GaugeRenderer {
         const { innerRadius } = this.layout.background;
 
         // 像线条指针一样：图片在未旋转坐标系中从内环边开始
-        const innerOffsetY = innerRadius * Math.cos(Math.abs(90 + angle));
-        const innerOffsetX = innerRadius * Math.sin(Math.abs(90 + angle));
+        const innerOffsetY = innerRadius * Math.cos(Math.abs(GaugeRenderer.ANGLE_OFFSET + angle));
+        const innerOffsetX = innerRadius * Math.sin(Math.abs(GaugeRenderer.ANGLE_OFFSET + angle));
         offsetX = innerOffsetX + pointer.image.offsetX;
         offsetY = -innerOffsetY + pointer.image.offsetY;
       } else {
         // 从中心开始（原有逻辑）
         // 根据pointer.length计算起点位置，与线条指针保持一致
         const pointerLength = this.layout.gauge.innerRadius * pointer.length;
-        offsetX = pointerLength - pointer.image.width / 2 + pointer.image.offsetX;
-        offsetY = -pointer.image.height / 2 + pointer.image.offsetY;
+        offsetX =
+          pointerLength - pointer.image.width / GaugeRenderer.HALF_DIVISOR + pointer.image.offsetX;
+        offsetY = -pointer.image.height / GaugeRenderer.HALF_DIVISOR + pointer.image.offsetY;
       }
 
       this.pointerImage = this.pointerGroup
@@ -371,6 +380,8 @@ export class GaugeRenderer {
             `${pointer.shadow.blur}px ${pointer.shadow.color})`
         );
       }
+    } else {
+      /* no-op */
     }
   }
 
@@ -379,14 +390,16 @@ export class GaugeRenderer {
 
     if (pointer.type === 'line' && this.pointerLine) {
       // 更新线条指针
-      const transition = this.animator.getTransition(this.pointerLine);
+      const transition = this.animator.getTransition(
+        this.pointerLine as unknown as Selection<BaseType, unknown, null, undefined>
+      );
       this.pointerLine.data([newAngle]);
 
       transition.attrTween('transform', (d, i, a) => {
         const element = select(a[i]);
         const currentTransform = element.attr('transform') || 'rotate(0)';
         const currentAngle = parseFloat(currentTransform.replace(/rotate\(|\)/g, ''));
-        const interpolator = interpolate(currentAngle, d);
+        const interpolator = interpolate(currentAngle, d as number);
 
         return (t: number) => {
           const interpolatedAngle = interpolator(t);
@@ -395,14 +408,16 @@ export class GaugeRenderer {
       });
     } else if (pointer.type === 'image' && this.pointerImage) {
       // 更新图片指针
-      const transition = this.animator.getTransition(this.pointerImage);
+      const transition = this.animator.getTransition(
+        this.pointerImage as unknown as Selection<BaseType, unknown, null, undefined>
+      );
       this.pointerImage.data([newAngle]);
 
       transition.attrTween('transform', (d, i, a) => {
         const element = select(a[i]);
         const currentTransform = element.attr('transform') || 'rotate(0)';
         const currentAngle = parseFloat(currentTransform.replace(/rotate\(|\)/g, ''));
-        const targetAngle = d + GaugeRenderer.ANGLE_OFFSET;
+        const targetAngle = (d as number) + GaugeRenderer.ANGLE_OFFSET;
         const interpolator = interpolate(currentAngle, targetAngle);
 
         return (t: number) => {
@@ -410,6 +425,8 @@ export class GaugeRenderer {
           return `rotate(${interpolatedAngle})`;
         };
       });
+    } else {
+      /* no-op */
     }
   }
 
@@ -513,7 +530,7 @@ export class GaugeRenderer {
       .attr('x', d => d.x)
       .attr('y', d => d.y)
       .attr('text-anchor', d => d.anchor)
-      .attr('dominant-baseline', 'middle')
+      .attr('dominant-baseline', GaugeRenderer.DOMINANT_BASELINE_MIDDLE)
       .style('font-size', `${labels.fontSize}px`)
       .attr('fill', labels.color)
       .text(d => d.text);
@@ -535,8 +552,8 @@ export class GaugeRenderer {
     valueGroup
       .append('text')
       .attr('class', 'value-text')
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'middle')
+      .attr('text-anchor', GaugeRenderer.TEXT_ANCHOR_MIDDLE)
+      .attr('dominant-baseline', GaugeRenderer.DOMINANT_BASELINE_MIDDLE)
       .style('font-size', `${text.fontSize}px`)
       .style('font-weight', text.fontWeight)
       .attr('fill', text.color)
@@ -548,8 +565,8 @@ export class GaugeRenderer {
         .append('text')
         .attr('class', 'value-label')
         .attr('y', text.fontSize + valueBox.labelOffsetY)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
+        .attr('text-anchor', GaugeRenderer.TEXT_ANCHOR_MIDDLE)
+        .attr('dominant-baseline', GaugeRenderer.DOMINANT_BASELINE_MIDDLE)
         .style('font-size', `${valueBox.font.size}px`)
         .attr('fill', this.getCurrentSegmentColor(value))
         .text(label);
