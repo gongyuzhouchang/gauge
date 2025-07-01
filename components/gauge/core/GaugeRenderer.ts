@@ -3,8 +3,14 @@
  * 负责将布局计算结果渲染为SVG元素
  */
 
-import type { DefaultArcObject } from 'd3-shape';
-import { select, arc, interpolate, Selection, type BaseType } from '../utils/d3-imports';
+import {
+  select,
+  arc,
+  interpolate,
+  type Selection,
+  type BaseType,
+  type DefaultArcObject
+} from '../utils/d3-imports';
 import { GaugeAnimator } from './GaugeAnimator';
 import type { GaugeConfig } from '../types/config';
 import type { GaugeLayout, SegmentData, TickData } from '../types/data';
@@ -326,37 +332,22 @@ export class GaugeRenderer {
         );
       }
     } else if (pointer.type === 'image' && pointer.image.src) {
-      // 渲染图片指针
-      let offsetX;
-      let offsetY;
+      const { innerRadius } = this.layout.background;
 
-      if (pointer.fromInnerEdge) {
-        // 从内环边开始指向外环
-        const { innerRadius } = this.layout.background;
-
-        // 像线条指针一样：图片在未旋转坐标系中从内环边开始
-        const innerOffsetY = innerRadius * Math.cos(Math.abs(C.ANGLE_OFFSET + angle));
-        const innerOffsetX = innerRadius * Math.sin(Math.abs(C.ANGLE_OFFSET + angle));
-        offsetX = innerOffsetX + pointer.image.offsetX;
-        offsetY = -innerOffsetY + pointer.image.offsetY;
-      } else {
-        // 根据pointer.length计算起点位置，与线条指针保持一致
-        const pointerLength = this.layout.gauge.innerRadius * pointer.length;
-        offsetX = pointerLength - pointer.image.width / C.HALF_DIVISOR + pointer.image.offsetX;
-        offsetY = -pointer.image.height / C.HALF_DIVISOR + pointer.image.offsetY;
-      }
+      const offsetX = Math.cos((Math.abs(angle) * Math.PI) / C.ANGLE_TO_DEGREES) * innerRadius;
+      const offsetY = Math.sin((Math.abs(angle) * Math.PI) / C.ANGLE_TO_DEGREES) * innerRadius;
 
       this.pointerImage = this.pointerGroup
         .selectAll<SVGImageElement, number>('image.pointer')
         .data([angle])
         .join('image')
         .attr('class', 'pointer')
-        .attr('href', pointer.image.src)
+        .attr('href', pointer.image.src || '')
         .attr('width', pointer.image.width)
         .attr('height', pointer.image.height)
-        .attr('x', offsetX)
-        .attr('y', offsetY)
-        .attr('transform', d => `rotate(${d + C.ANGLE_OFFSET})`);
+        .attr('x', pointer.image.offsetX)
+        .attr('y', pointer.image.offsetY)
+        .attr('transform', d => `translate(${offsetX}, ${-offsetY}) rotate(${d + C.ANGLE_OFFSET})`);
 
       // 添加阴影效果
       if (pointer.shadow.enable) {
@@ -402,14 +393,27 @@ export class GaugeRenderer {
 
       transition.attrTween('transform', (d, i, a) => {
         const element = select(a[i]);
-        const currentTransform = element.attr('transform') || 'rotate(0)';
-        const currentAngle = parseFloat(currentTransform.replace(/rotate\(|\)/g, ''));
+        const currentTransform = element.attr('transform') || 'translate(0, 0) rotate(0)';
+
+        // 从复合变换中提取当前角度
+        const rotateMatch = currentTransform.match(/rotate\(([^)]+)\)/);
+        const currentAngle = rotateMatch ? parseFloat(rotateMatch[1]) : 0;
+
         const targetAngle = (d as number) + C.ANGLE_OFFSET;
-        const interpolator = interpolate(currentAngle, targetAngle);
+        const angleInterpolator = interpolate(currentAngle, targetAngle);
 
         return (t: number) => {
-          const interpolatedAngle = interpolator(t);
-          return `rotate(${interpolatedAngle})`;
+          const interpolatedAngle = angleInterpolator(t);
+
+          // 根据插值角度计算新的translate偏移
+          const realAngle = interpolatedAngle - C.ANGLE_OFFSET;
+          const { innerRadius } = this.layout.background;
+          const offsetX =
+            Math.cos((Math.abs(realAngle) * Math.PI) / C.ANGLE_TO_DEGREES) * innerRadius;
+          const offsetY =
+            Math.sin((Math.abs(realAngle) * Math.PI) / C.ANGLE_TO_DEGREES) * innerRadius;
+
+          return `translate(${offsetX}, ${-offsetY}) rotate(${interpolatedAngle})`;
         };
       });
     } else {

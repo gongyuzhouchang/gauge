@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D3 Gauge Chart - 简单测试</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 40px;
+      background-color: #f5f5f5;
+    }
+    .test-card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .gauge-container {
+      width: 400px;
+      height: 300px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin: 15px auto;
+    }
+    button {
+      background: #007cba;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      margin: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005a8a;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <h1>D3 Gauge Chart - 简单测试</h1>
+  
+  <div class="test-card">
+    <h2>选择性打包版本测试</h2>
+    <div id="status-selective" class="status">正在加载...</div>
+    <div class="gauge-container" id="gauge-selective"></div>
+    <div style="text-align: center;">
+      <button onclick="testGauge('selective', 25)">25</button>
+      <button onclick="testGauge('selective', 50)">50</button>
+      <button onclick="testGauge('selective', 75)">75</button>
+      <button onclick="testGauge('selective', 100)">100</button>
+    </div>
+  </div>
+
+  <!-- 公共依赖 -->
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4"></script>
+
+  <!-- 选择性打包版本 -->
+  <script src="../../dist/gauge/selective/d3-gauge-chart.selective.umd.js"></script>
+
+  <script>
+    let gauge;
+    const statusDiv = document.getElementById('status-selective');
+
+    try {
+      // 测试构造函数是否可用
+      if (typeof D3GaugeChart === 'undefined') {
+        throw new Error('D3GaugeChart 未定义');
+      }
+
+      // 创建仪表盘实例
+      gauge = new D3GaugeChart.D3GaugeChart(document.getElementById('gauge-selective'), {
+        width: 400,
+        height: 300,
+        segments: [
+          { min: 0, max: 25, color: '#ff6b6b', label: '低风险' },
+          { min: 25, max: 50, color: '#feca57', label: '中风险' },
+          { min: 50, max: 75, color: '#48dbfb', label: '高风险' },
+          { min: 75, max: 100, color: '#1dd1a1', label: '极高风险' }
+        ],
+        // pointer: {
+        //   type: 'line',
+        //   color: '#2c3e50',
+        //   width: 3
+        // }
+      });
+
+      // 设置初始值
+      gauge.setData({ value: 60 });
+
+      statusDiv.className = 'status success';
+      statusDiv.textContent = '✅ 选择性打包版本加载成功！';
+
+      console.log('✅ D3GaugeChart 创建成功');
+      console.log('📦 使用的是选择性打包版本 (68.95kB UMD, 23.07kB gzip)');
+
+    } catch (error) {
+      statusDiv.className = 'status error';
+      statusDiv.textContent = `❌ 错误: ${error.message}`;
+      console.error('❌ 错误:', error);
+    }
+
+    function testGauge(type, value) {
+      try {
+        if (gauge) {
+          gauge.setValue(value);
+          console.log(`🎯 设置值: ${value}`);
+        }
+      } catch (error) {
+        console.error('❌ 设置值失败:', error);
+      }
+    }
+
+    // 页面加载完成后的测试
+    window.addEventListener('load', function() {
+      console.log('📄 页面加载完成');
+      console.log('🔍 可用的全局变量:', Object.keys(window).filter(k => k.includes('D3') || k.includes('d3')));
+    });
+  </script>
+</body>
+</html> 

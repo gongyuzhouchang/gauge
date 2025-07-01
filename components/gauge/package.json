@@ -1,0 +1,72 @@
+{
+  "name": "@your-org/d3-gauge-chart",
+  "version": "1.0.0",
+  "description": "A highly customizable D3.js gauge chart component with on-demand packaging",
+  "main": "dist/d3-gauge-chart.umd.js",
+  "module": "dist/d3-gauge-chart.es.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "BUILD.md"
+  ],
+  "scripts": {
+    "build": "vite build --config ../../vite.gauge.config.ts",
+    "build:bundle": "vite build --config ../../vite.gauge.bundle.config.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "d3",
+    "gauge",
+    "chart",
+    "data-visualization",
+    "typescript",
+    "tree-shaking"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/gauge-chart.git",
+    "directory": "components/gauge"
+  },
+  "peerDependencies": {
+    "d3-selection": "^3.0.0",
+    "d3-scale": "^4.0.2",
+    "d3-shape": "^3.2.0",
+    "d3-interpolate": "^3.0.1",
+    "d3-transition": "^3.0.1",
+    "d3-ease": "^3.0.1",
+    "d3-color": "^3.1.0",
+    "lodash-es": "^4.17.21"
+  },
+  "peerDependenciesMeta": {
+    "d3-selection": {
+      "optional": false
+    },
+    "d3-scale": {
+      "optional": false
+    },
+    "d3-shape": {
+      "optional": false
+    },
+    "d3-interpolate": {
+      "optional": false
+    },
+    "d3-transition": {
+      "optional": false
+    },
+    "d3-ease": {
+      "optional": false
+    },
+    "d3-color": {
+      "optional": false
+    },
+    "lodash-es": {
+      "optional": false
+    }
+  },
+  "engines": {
+    "node": ">=16"
+  }
+} 

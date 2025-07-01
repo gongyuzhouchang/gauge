@@ -70,11 +70,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+// 开发时直接从源码导入，支持热更新
+// eslint-disable-next-line import/no-relative-packages
+import { D3GaugeChart } from './gauge/D3GaugeChart';
 import { BarChart } from './bar/BarChart';
 import type { BarChartData } from './bar/types/data';
 import type { BarChartConfig } from './bar/types/config';
 // import { FinalGaugeChart } from './gauge/FinalGaugeChart';
-import { D3GaugeChart } from './gauge/D3GaugeChart';
 
 // 图表容器引用
 const chartRef = ref<HTMLElement | null>(null);
@@ -464,7 +466,7 @@ const initGaugeChart = () => {
     });
 
     // 设置初始数据，标签将根据数值自动匹配对应区段
-    d3GaugeChart.setData({ value: 50 });
+    d3GaugeChart.setData({ value: 10 });
 
     console.log('D3 仪表盘初始化成功');
   } catch (error) {

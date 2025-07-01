@@ -29,7 +29,11 @@
     "components/**/*.ts",
     "components/**/*.d.ts",
     "components/**/*.tsx",
-    "components/**/*.vue"
+    "components/**/*.vue",
+    "vite.gauge.config.ts",
+    "vite.gauge.bundle.config.ts",
+    "vite.gauge.selective.config.ts",
+    "vite.dev.config.ts"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
