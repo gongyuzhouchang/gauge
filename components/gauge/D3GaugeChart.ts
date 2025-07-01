@@ -3,7 +3,7 @@
  * 整合布局、渲染和动画，对外提供接口
  */
 
-import { merge } from 'lodash-es';
+import { merge } from './utils/merge';
 import { select, type Selection } from './utils/d3-imports';
 import { GaugeLayoutCalculator } from './core/GaugeLayout';
 import { GaugeRenderer } from './core/GaugeRenderer';
