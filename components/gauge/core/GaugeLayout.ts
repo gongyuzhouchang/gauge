@@ -6,6 +6,7 @@
 import { scaleLinear, type ScaleLinear } from '../utils/d3-imports';
 import type { GaugeConfig } from '../types/config';
 import type { GaugeLayout, TickData, SegmentData } from '../types/data';
+import { GaugeConst as C } from './constants';
 
 export class GaugeLayoutCalculator {
   private config: GaugeConfig;
@@ -14,22 +15,6 @@ export class GaugeLayoutCalculator {
 
   // D3比例尺 - 核心概念讲解
   private angleScale: ScaleLinear<number, number>;
-
-  // 常量定义
-  private static readonly MATH_CONSTANTS = {
-    HALF_DIVISOR: 2
-  } as const;
-
-  private static readonly CONSTANTS = {
-    CENTER_RATIO: GaugeLayoutCalculator.MATH_CONSTANTS.HALF_DIVISOR,
-    SEGMENT_VALUE_RATIO: GaugeLayoutCalculator.MATH_CONSTANTS.HALF_DIVISOR,
-    INNER_RADIUS_RATIO: 0.8,
-    LABEL_FONT_SIZE_DEFAULT: 10,
-    LABEL_OFFSET_RATIO: 0.5,
-    PI_HALF: Math.PI / GaugeLayoutCalculator.MATH_CONSTANTS.HALF_DIVISOR,
-    ANGLE_NORMALIZATION_OFFSET: 1,
-    ANGLE_TO_DEGREES: 180
-  } as const;
 
   constructor(config: GaugeConfig) {
     this.config = config;
@@ -66,10 +51,9 @@ export class GaugeLayoutCalculator {
     const { width, height, gauge, background, layout } = this.config;
 
     // 计算中心点
-    const centerX = width / GaugeLayoutCalculator.CONSTANTS.CENTER_RATIO;
+    const centerX = width / C.HALF_DIVISOR;
     const centerY = height * layout.centerYRatio;
 
-    // 计算基础半径
     // 这个算法确保仪表盘在不同尺寸容器中都能合适显示
     const baseRadius =
       Math.min(width, height * layout.baseRadiusRatio.minHeightRatio) /
@@ -105,7 +89,7 @@ export class GaugeLayoutCalculator {
   public calculateSegments(): SegmentData[] {
     return this.config.segments.map(segment => ({
       ...segment,
-      value: (segment.min + segment.max) / GaugeLayoutCalculator.CONSTANTS.SEGMENT_VALUE_RATIO,
+      value: (segment.min + segment.max) / C.HALF_DIVISOR,
       startAngle: this.angleScale(segment.min),
       endAngle: this.angleScale(segment.max)
     }));
@@ -163,9 +147,8 @@ export class GaugeLayoutCalculator {
     // 计算标签位置
     const labelPosition = this.calculateLabelPosition(angle, isMain, ticks, endRadius);
 
-    // 为了与D3 arc生成器保持一致，需要调整手动坐标计算的角度
     // angleScale输出[0,π]，但配合rotate(-90)后，需要转换为正确的刻度位置
-    const adjustedAngle = angle - GaugeLayoutCalculator.CONSTANTS.PI_HALF;
+    const adjustedAngle = angle - C.PI_HALF;
 
     return {
       value,
@@ -197,17 +180,15 @@ export class GaugeLayoutCalculator {
     let labelY: number;
 
     if (ticks.label.position === 'inner') {
-      // inner位置：保持环形布局，但投影到内圆下方区域
       // 使用与其他元素一致的角度变换
       const adjustedAngleForInner = angle - Math.PI;
 
       // 内圆下方的半径
-      const baseRadius = gauge.innerRadius * GaugeLayoutCalculator.CONSTANTS.INNER_RADIUS_RATIO;
+      const baseRadius = gauge.innerRadius * C.LAYOUT_INNER_RADIUS_RATIO;
 
       // 向下偏移
       const offsetY =
-        (ticks.label.fontSize || GaugeLayoutCalculator.CONSTANTS.LABEL_FONT_SIZE_DEFAULT) *
-        GaugeLayoutCalculator.CONSTANTS.LABEL_OFFSET_RATIO;
+        (ticks.label.fontSize || C.LABEL_FONT_SIZE_DEFAULT) * C.LAYOUT_LABEL_OFFSET_RATIO;
 
       labelX = Math.cos(adjustedAngleForInner) * baseRadius;
       labelY = Math.sin(adjustedAngleForInner) * baseRadius - offsetY;
@@ -219,7 +200,7 @@ export class GaugeLayoutCalculator {
     }
 
     // 调整标签坐标
-    const adjustedAngle = angle - GaugeLayoutCalculator.CONSTANTS.PI_HALF;
+    const adjustedAngle = angle - C.PI_HALF;
 
     if (ticks.label.position === 'inner') {
       // inner位置：使用直接计算的坐标，不需要旋转变换
@@ -247,9 +228,8 @@ export class GaugeLayoutCalculator {
     const { centerX, centerY, gauge } = this.layout;
     const pointerLength = gauge.innerRadius * this.config.pointer.length;
 
-    const normalizedRatio =
-      angle / Math.PI - GaugeLayoutCalculator.CONSTANTS.ANGLE_NORMALIZATION_OFFSET;
-    const angleDeg = normalizedRatio * GaugeLayoutCalculator.CONSTANTS.ANGLE_TO_DEGREES;
+    const normalizedRatio = angle / Math.PI - C.ANGLE_NORMALIZATION_OFFSET;
+    const angleDeg = normalizedRatio * C.ANGLE_TO_DEGREES;
 
     return {
       x: centerX + Math.cos(angle) * pointerLength,

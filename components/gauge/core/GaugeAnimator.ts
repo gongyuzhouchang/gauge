@@ -12,15 +12,10 @@ import {
   type BaseType
 } from '../utils/d3-imports';
 import type { GaugeConfig } from '../types/config';
+import { GaugeConst as C } from './constants';
 
 export class GaugeAnimator {
   private config: GaugeConfig;
-
-  // 常量定义
-  private static readonly CONSTANTS = {
-    ZERO_DURATION: 0,
-    DEFAULT_ANGLE: 0
-  } as const;
 
   constructor(config: GaugeConfig) {
     this.config = config;
@@ -35,7 +30,7 @@ export class GaugeAnimator {
   ): Transition<BaseType, unknown, null, undefined> {
     if (!this.config.animation.enable) {
       // 如果禁用了动画，返回一个空的过渡，所有变化立即生效
-      return transition().duration(GaugeAnimator.CONSTANTS.ZERO_DURATION);
+      return transition().duration(C.ANIMATION_ZERO_DURATION);
     }
 
     // 使用一个平滑的缓入缓出效果
@@ -76,7 +71,7 @@ export class GaugeAnimator {
       }
 
       const currentTransform = node.transform?.baseVal?.[0];
-      const currentAngle = currentTransform?.angle ?? GaugeAnimator.CONSTANTS.DEFAULT_ANGLE;
+      const currentAngle = currentTransform?.angle ?? C.ANIMATION_DEFAULT_ANGLE;
 
       // 创建一个从当前角度到新角度的数字插值器
       const interpolator = interpolate(currentAngle, newAngle);

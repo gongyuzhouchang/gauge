@@ -203,9 +203,7 @@ export class GaugeRenderer {
     this.renderTickLabels(ticks);
   }
 
-  // ------------------------
-  // 刻度线渲染(抽离降低复杂度)
-  // ------------------------
+  /* 刻度线渲染(抽离降低复杂度) */
   private renderTickLines(ticks: TickData[]): void {
     if (!this.config.ticks.show) {
       this.gaugeGroup.selectAll<SVGLineElement, TickData>('line.tick-line').remove();
@@ -238,9 +236,7 @@ export class GaugeRenderer {
       );
   }
 
-  // ------------------------
-  // 刻度标签渲染(抽离降低复杂度)
-  // ------------------------
+  /* 刻度标签渲染 */
   private renderTickLabels(ticks: TickData[]): void {
     if (!this.config.ticks.label.show) {
       // 清空
@@ -344,7 +340,6 @@ export class GaugeRenderer {
         offsetX = innerOffsetX + pointer.image.offsetX;
         offsetY = -innerOffsetY + pointer.image.offsetY;
       } else {
-        // 从中心开始（原有逻辑）
         // 根据pointer.length计算起点位置，与线条指针保持一致
         const pointerLength = this.layout.gauge.innerRadius * pointer.length;
         offsetX = pointerLength - pointer.image.width / C.HALF_DIVISOR + pointer.image.offsetX;
@@ -480,7 +475,6 @@ export class GaugeRenderer {
     this.svg.selectAll('text.end-label').remove();
     this.labelsGroup.selectAll('text').remove();
 
-    // 计算水平放置的标签位置
     // 左侧标签位置（半圆左端）
     const leftLabelX = centerX - labelRadius;
     const leftLabelY = centerY + labels.offset;
