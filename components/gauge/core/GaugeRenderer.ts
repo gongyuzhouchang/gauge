@@ -8,6 +8,7 @@ import { select, arc, interpolate, Selection, type BaseType } from '../utils/d3-
 import { GaugeAnimator } from './GaugeAnimator';
 import type { GaugeConfig } from '../types/config';
 import type { GaugeLayout, SegmentData, TickData } from '../types/data';
+import { GaugeConst as C } from './constants';
 
 export class GaugeRenderer {
   private svg: Selection<SVGSVGElement, unknown, null, undefined>;
@@ -30,24 +31,6 @@ export class GaugeRenderer {
   private pointerLine!: Selection<SVGLineElement, number, SVGGElement, unknown>;
 
   private pointerImage!: Selection<SVGImageElement, number, SVGGElement, unknown>;
-
-  // 常量定义
-  private static readonly STROKE_COLOR = '#fff';
-
-  private static readonly STROKE_WIDTH = 2;
-
-  private static readonly TEXT_ANCHOR_MIDDLE = 'middle';
-
-  private static readonly DOMINANT_BASELINE_MIDDLE = 'middle';
-
-  private static readonly TICK_LABEL_CLASS = 'text.tick-label';
-
-  private static readonly ANGLE_OFFSET = 90;
-
-  private static readonly ROTATE_BASE_ANGLE = -90;
-
-  /** 公用二分因子，替代除以2的魔法数字 */
-  private static readonly HALF_DIVISOR = 2;
 
   /**
    * D3 选择集 (Selection) 详解:
@@ -80,7 +63,7 @@ export class GaugeRenderer {
     // 设置变换，将(0,0)原点移动到仪表盘中心
     const baseTransform = `translate(${this.layout.centerX}, ${this.layout.centerY})`;
     // 为仪表盘主体和标签应用-90度旋转，以创建上半圆效果
-    const rotatedTransform = `${baseTransform} rotate(${GaugeRenderer.ROTATE_BASE_ANGLE})`;
+    const rotatedTransform = `${baseTransform} rotate(${C.ROTATE_BASE_ANGLE})`;
 
     // 使用旋转
     this.backgroundGroup = this.svg
@@ -203,9 +186,9 @@ export class GaugeRenderer {
       .attr('y1', angle => this.layout.gauge.innerRadius * Math.sin(angle))
       .attr('x2', angle => this.layout.gauge.outerRadius * Math.cos(angle))
       .attr('y2', angle => this.layout.gauge.outerRadius * Math.sin(angle))
-      .attr('stroke', GaugeRenderer.STROKE_COLOR)
-      .attr('stroke-width', GaugeRenderer.STROKE_WIDTH)
-      .attr('transform', `rotate(${GaugeRenderer.ROTATE_BASE_ANGLE})`);
+      .attr('stroke', C.STROKE_COLOR)
+      .attr(C.ATTR_STROKE_WIDTH, C.STROKE_WIDTH)
+      .attr('transform', `rotate(${C.ROTATE_BASE_ANGLE})`);
   }
 
   /**
@@ -213,79 +196,86 @@ export class GaugeRenderer {
    * 分别控制刻度线和标签的显示
    */
   public renderTicks(ticks: TickData[]): void {
-    // 分别控制刻度线的渲染
-    if (this.config.ticks.show) {
-      // 渲染刻度线
-      this.gaugeGroup
-        .selectAll<SVGLineElement, TickData>('line.tick-line')
-        .data(ticks)
-        .join('line')
-        .attr('class', 'tick-line')
-        .attr('x1', d => d.x) // 直接使用预计算的坐标
-        .attr('y1', d => d.y) // 直接使用预计算的坐标
-        .attr('x2', d => {
-          const tickLength = d.isMain ? this.config.ticks.mainLength : this.config.ticks.length;
-          // 计算内端点：从外圆心向内缩进tickLength
-          const innerRadius = this.layout.gauge.outerRadius - tickLength;
-          return Math.cos(d.angle) * innerRadius;
-        })
-        .attr('y2', d => {
-          const tickLength = d.isMain ? this.config.ticks.mainLength : this.config.ticks.length;
-          // 计算内端点：从外圆心向内缩进tickLength
-          const innerRadius = this.layout.gauge.outerRadius - tickLength;
-          return Math.sin(d.angle) * innerRadius;
-        })
-        .attr('stroke', this.config.ticks.color)
-        .attr('stroke-width', d =>
-          d.isMain ? this.config.ticks.mainWidth : this.config.ticks.width
-        );
-    } else {
-      // 如果刻度线不显示，清除所有刻度线
+    this.renderTickLines(ticks);
+    this.renderTickLabels(ticks);
+  }
+
+  // ------------------------
+  // 刻度线渲染(抽离降低复杂度)
+  // ------------------------
+  private renderTickLines(ticks: TickData[]): void {
+    if (!this.config.ticks.show) {
       this.gaugeGroup.selectAll<SVGLineElement, TickData>('line.tick-line').remove();
+      return;
     }
 
-    // 分别控制刻度标签的渲染
-    if (this.config.ticks.label.show) {
-      const tickLabels = ticks.filter(d => d.isMain && d.labelX !== undefined);
+    /*  渲染刻度线  */
+    this.gaugeGroup
+      .selectAll<SVGLineElement, TickData>('line.tick-line')
+      .data(ticks)
+      .join('line')
+      .attr('class', 'tick-line')
+      // 直接使用预计算的坐标
+      .attr('x1', d => d.x)
+      .attr('y1', d => d.y)
+      // 计算内端点坐标
+      .attr('x2', d => {
+        const tickLength = d.isMain ? this.config.ticks.mainLength : this.config.ticks.length;
+        const innerRadius = this.layout.gauge.outerRadius - tickLength;
+        return Math.cos(d.angle) * innerRadius;
+      })
+      .attr('y2', d => {
+        const tickLength = d.isMain ? this.config.ticks.mainLength : this.config.ticks.length;
+        const innerRadius = this.layout.gauge.outerRadius - tickLength;
+        return Math.sin(d.angle) * innerRadius;
+      })
+      .attr('stroke', this.config.ticks.color)
+      .attr(C.ATTR_STROKE_WIDTH, d =>
+        d.isMain ? this.config.ticks.mainWidth : this.config.ticks.width
+      );
+  }
 
-      if (this.config.ticks.label.position === 'inner') {
-        // inner位置：渲染到主SVG，避免旋转变换影响，文字保持水平
-        this.svg.selectAll<SVGTextElement, TickData>('text.tick-label').remove();
-        this.svg
-          .selectAll<SVGTextElement, TickData>('text.tick-label')
-          .data(tickLabels)
-          .join('text')
-          .attr('class', 'tick-label')
-          .attr('x', d => this.layout.centerX + d.labelX!)
-          .attr('y', d => this.layout.centerY + d.labelY!)
-          .attr('text-anchor', GaugeRenderer.TEXT_ANCHOR_MIDDLE)
-          .attr('dominant-baseline', GaugeRenderer.DOMINANT_BASELINE_MIDDLE)
-          .style('font-size', `${this.config.ticks.label.fontSize}px`)
-          .style('font-family', this.config.ticks.label.fontFamily)
-          .attr('fill', this.config.ticks.label.color)
-          .text(d => d.value.toString());
-      } else {
-        // outer位置：渲染到gaugeGroup，跟随旋转
-        this.svg.selectAll<SVGTextElement, TickData>('text.tick-label').remove();
-        this.gaugeGroup
-          .selectAll<SVGTextElement, TickData>('text.tick-label')
-          .data(tickLabels)
-          .join('text')
-          .attr('class', 'tick-label')
-          .attr('x', d => d.labelX!)
-          .attr('y', d => d.labelY!)
-          .attr('text-anchor', GaugeRenderer.TEXT_ANCHOR_MIDDLE)
-          .attr('dominant-baseline', GaugeRenderer.DOMINANT_BASELINE_MIDDLE)
-          .style('font-size', `${this.config.ticks.label.fontSize}px`)
-          .style('font-family', this.config.ticks.label.fontFamily)
-          .attr('fill', this.config.ticks.label.color)
-          .text(d => d.value.toString());
-      }
-    } else {
-      // 如果标签不显示，清除所有标签
-      this.svg.selectAll<SVGTextElement, TickData>('text.tick-label').remove();
-      this.gaugeGroup.selectAll<SVGTextElement, TickData>('text.tick-label').remove();
+  // ------------------------
+  // 刻度标签渲染(抽离降低复杂度)
+  // ------------------------
+  private renderTickLabels(ticks: TickData[]): void {
+    if (!this.config.ticks.label.show) {
+      // 清空
+      this.svg.selectAll(`text.${C.CLASS_TICK_LABEL}`).remove();
+      this.gaugeGroup.selectAll(`text.${C.CLASS_TICK_LABEL}`).remove();
+      return;
     }
+
+    const tickLabels = ticks.filter(d => d.isMain && d.labelX !== undefined);
+
+    // 不论 inner / outer，先移除旧标签，避免重复
+    this.svg.selectAll(`text.${C.CLASS_TICK_LABEL}`).remove();
+    this.gaugeGroup.selectAll(`text.${C.CLASS_TICK_LABEL}`).remove();
+
+    const targetSelection =
+      this.config.ticks.label.position === 'inner' ? this.svg : this.gaugeGroup;
+
+    targetSelection
+      .selectAll(`text.${C.CLASS_TICK_LABEL}`)
+      .data(tickLabels)
+      .join('text')
+      .attr('class', C.CLASS_TICK_LABEL)
+      .attr('x', d =>
+        this.config.ticks.label.position === 'inner'
+          ? this.layout.centerX + (d.labelX ?? 0)
+          : d.labelX ?? 0
+      )
+      .attr('y', d =>
+        this.config.ticks.label.position === 'inner'
+          ? this.layout.centerY + (d.labelY ?? 0)
+          : d.labelY ?? 0
+      )
+      .attr(C.ATTR_TEXT_ANCHOR, C.TEXT_ANCHOR_MIDDLE)
+      .attr(C.ATTR_DOMINANT_BASELINE, C.DOMINANT_BASELINE_MIDDLE)
+      .style('font-size', `${this.config.ticks.label.fontSize}px`)
+      .style('font-family', this.config.ticks.label.fontFamily)
+      .attr('fill', this.config.ticks.label.color)
+      .text(d => d.value.toString());
   }
 
   /**
@@ -346,17 +336,16 @@ export class GaugeRenderer {
         const { innerRadius } = this.layout.background;
 
         // 像线条指针一样：图片在未旋转坐标系中从内环边开始
-        const innerOffsetY = innerRadius * Math.cos(Math.abs(GaugeRenderer.ANGLE_OFFSET + angle));
-        const innerOffsetX = innerRadius * Math.sin(Math.abs(GaugeRenderer.ANGLE_OFFSET + angle));
+        const innerOffsetY = innerRadius * Math.cos(Math.abs(C.ANGLE_OFFSET + angle));
+        const innerOffsetX = innerRadius * Math.sin(Math.abs(C.ANGLE_OFFSET + angle));
         offsetX = innerOffsetX + pointer.image.offsetX;
         offsetY = -innerOffsetY + pointer.image.offsetY;
       } else {
         // 从中心开始（原有逻辑）
         // 根据pointer.length计算起点位置，与线条指针保持一致
         const pointerLength = this.layout.gauge.innerRadius * pointer.length;
-        offsetX =
-          pointerLength - pointer.image.width / GaugeRenderer.HALF_DIVISOR + pointer.image.offsetX;
-        offsetY = -pointer.image.height / GaugeRenderer.HALF_DIVISOR + pointer.image.offsetY;
+        offsetX = pointerLength - pointer.image.width / C.HALF_DIVISOR + pointer.image.offsetX;
+        offsetY = -pointer.image.height / C.HALF_DIVISOR + pointer.image.offsetY;
       }
 
       this.pointerImage = this.pointerGroup
@@ -369,7 +358,7 @@ export class GaugeRenderer {
         .attr('height', pointer.image.height)
         .attr('x', offsetX)
         .attr('y', offsetY)
-        .attr('transform', d => `rotate(${d + GaugeRenderer.ANGLE_OFFSET})`);
+        .attr('transform', d => `rotate(${d + C.ANGLE_OFFSET})`);
 
       // 添加阴影效果
       if (pointer.shadow.enable) {
@@ -417,7 +406,7 @@ export class GaugeRenderer {
         const element = select(a[i]);
         const currentTransform = element.attr('transform') || 'rotate(0)';
         const currentAngle = parseFloat(currentTransform.replace(/rotate\(|\)/g, ''));
-        const targetAngle = (d as number) + GaugeRenderer.ANGLE_OFFSET;
+        const targetAngle = (d as number) + C.ANGLE_OFFSET;
         const interpolator = interpolate(currentAngle, targetAngle);
 
         return (t: number) => {
@@ -433,23 +422,18 @@ export class GaugeRenderer {
   /**
    * 获取指针的D3选择集
    */
-  public getPointerSelection(): Selection<
-    SVGLineElement | SVGImageElement,
-    number,
-    SVGGElement,
-    unknown
-  > {
+  public getPointerSelection(): Selection<any, any, any, any> | null {
     const { pointer } = this.config;
 
-    if (pointer.type === 'line') {
-      return this.pointerLine as any;
+    if (pointer.type === 'line' && this.pointerLine) {
+      return this.pointerLine;
     }
-    if (pointer.type === 'image') {
-      return this.pointerImage as any;
+    if (pointer.type === 'image' && this.pointerImage) {
+      return this.pointerImage;
     }
 
     // 返回空选择集作为后备
-    return this.pointerGroup.selectAll('.pointer') as any;
+    return null;
   }
 
   /**
@@ -523,14 +507,14 @@ export class GaugeRenderer {
 
     // 直接添加到主SVG上，避免受到旋转变换的影响
     this.svg
-      .selectAll<SVGTextElement, LabelData>('text.horizontal-end-label')
+      .selectAll<SVGTextElement>('text.horizontal-end-label')
       .data(labelData)
       .join('text')
       .attr('class', 'horizontal-end-label')
       .attr('x', d => d.x)
       .attr('y', d => d.y)
       .attr('text-anchor', d => d.anchor)
-      .attr('dominant-baseline', GaugeRenderer.DOMINANT_BASELINE_MIDDLE)
+      .attr(C.ATTR_DOMINANT_BASELINE, C.DOMINANT_BASELINE_MIDDLE)
       .style('font-size', `${labels.fontSize}px`)
       .attr('fill', labels.color)
       .text(d => d.text);
@@ -552,8 +536,8 @@ export class GaugeRenderer {
     valueGroup
       .append('text')
       .attr('class', 'value-text')
-      .attr('text-anchor', GaugeRenderer.TEXT_ANCHOR_MIDDLE)
-      .attr('dominant-baseline', GaugeRenderer.DOMINANT_BASELINE_MIDDLE)
+      .attr('text-anchor', C.TEXT_ANCHOR_MIDDLE)
+      .attr('dominant-baseline', C.DOMINANT_BASELINE_MIDDLE)
       .style('font-size', `${text.fontSize}px`)
       .style('font-weight', text.fontWeight)
       .attr('fill', text.color)
@@ -565,8 +549,8 @@ export class GaugeRenderer {
         .append('text')
         .attr('class', 'value-label')
         .attr('y', text.fontSize + valueBox.labelOffsetY)
-        .attr('text-anchor', GaugeRenderer.TEXT_ANCHOR_MIDDLE)
-        .attr('dominant-baseline', GaugeRenderer.DOMINANT_BASELINE_MIDDLE)
+        .attr('text-anchor', C.TEXT_ANCHOR_MIDDLE)
+        .attr('dominant-baseline', C.DOMINANT_BASELINE_MIDDLE)
         .style('font-size', `${valueBox.font.size}px`)
         .attr('fill', this.getCurrentSegmentColor(value))
         .text(label);
