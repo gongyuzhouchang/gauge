@@ -10,6 +10,9 @@ import type { GaugeConfig } from '../types/config';
 import type { GaugeLayout, SegmentData, TickData } from '../types/data';
 import { GaugeConst as C } from './constants';
 
+// 用于统一指针选择集类型
+type PointerSelection = Selection<SVGLineElement | SVGImageElement, number, SVGGElement, unknown>;
+
 export class GaugeRenderer {
   private svg: Selection<SVGSVGElement, unknown, null, undefined>;
 
@@ -422,14 +425,14 @@ export class GaugeRenderer {
   /**
    * 获取指针的D3选择集
    */
-  public getPointerSelection(): Selection<any, any, any, any> | null {
+  public getPointerSelection(): PointerSelection | null {
     const { pointer } = this.config;
 
     if (pointer.type === 'line' && this.pointerLine) {
-      return this.pointerLine;
+      return this.pointerLine as PointerSelection;
     }
     if (pointer.type === 'image' && this.pointerImage) {
-      return this.pointerImage;
+      return this.pointerImage as PointerSelection;
     }
 
     // 返回空选择集作为后备
@@ -503,17 +506,15 @@ export class GaugeRenderer {
       }
     ];
 
-    type LabelData = (typeof labelData)[number];
-
     // 直接添加到主SVG上，避免受到旋转变换的影响
     this.svg
-      .selectAll<SVGTextElement>('text.horizontal-end-label')
+      .selectAll('text.horizontal-end-label')
       .data(labelData)
       .join('text')
       .attr('class', 'horizontal-end-label')
       .attr('x', d => d.x)
       .attr('y', d => d.y)
-      .attr('text-anchor', d => d.anchor)
+      .attr(C.ATTR_TEXT_ANCHOR, d => d.anchor)
       .attr(C.ATTR_DOMINANT_BASELINE, C.DOMINANT_BASELINE_MIDDLE)
       .style('font-size', `${labels.fontSize}px`)
       .attr('fill', labels.color)
