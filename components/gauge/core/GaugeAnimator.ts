@@ -8,12 +8,19 @@ import {
   interpolate,
   easeCubicInOut,
   type Selection,
-  type Transition
+  type Transition,
+  type BaseType
 } from '../utils/d3-imports';
 import type { GaugeConfig } from '../types/config';
 
 export class GaugeAnimator {
   private config: GaugeConfig;
+
+  // 常量定义
+  private static readonly CONSTANTS = {
+    ZERO_DURATION: 0,
+    DEFAULT_ANGLE: 0
+  } as const;
 
   constructor(config: GaugeConfig) {
     this.config = config;
@@ -23,16 +30,19 @@ export class GaugeAnimator {
    * 获取一个标准的D3过渡对象
    * 调用者可以用它来制作各种属性的动画
    */
-  public getTransition(selection: Selection<any, any, any, any>): Transition<any, any, any, any> {
+  public getTransition(
+    selection: Selection<BaseType, unknown, null, undefined>
+  ): Transition<BaseType, unknown, null, undefined> {
     if (!this.config.animation.enable) {
       // 如果禁用了动画，返回一个空的过渡，所有变化立即生效
-      return transition().duration(0) as any;
+      return transition().duration(GaugeAnimator.CONSTANTS.ZERO_DURATION);
     }
 
+    // 使用一个平滑的缓入缓出效果
     return selection
       .transition('gauge-update')
       .duration(this.config.animation.duration)
-      .ease(easeCubicInOut); // 使用一个平滑的缓入缓出效果
+      .ease(easeCubicInOut);
   }
 
   /**
@@ -53,12 +63,17 @@ export class GaugeAnimator {
     pointerSelection: Selection<SVGLineElement, unknown, null, undefined>,
     newAngle: number
   ): void {
-    const transition = this.getTransition(pointerSelection);
+    const pointerTransition = this.getTransition(pointerSelection);
 
-    transition.attrTween('transform', () => {
-      // `this` 指向当前正在动画的DOM元素
-      const currentTransform = (pointerSelection.node() as any).transform.baseVal[0];
-      const currentAngle = currentTransform ? currentTransform.angle : 0;
+    pointerTransition.attrTween('transform', () => {
+      // 获取当前变换信息
+      const node = pointerSelection.node();
+      if (!node) {
+        return () => `rotate(${newAngle})`;
+      }
+
+      const currentTransform = node.transform?.baseVal?.[0];
+      const currentAngle = currentTransform?.angle ?? GaugeAnimator.CONSTANTS.DEFAULT_ANGLE;
 
       // 创建一个从当前角度到新角度的数字插值器
       const interpolator = interpolate(currentAngle, newAngle);

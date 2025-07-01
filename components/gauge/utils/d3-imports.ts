@@ -9,6 +9,7 @@ export type { Selection, BaseType } from 'd3';
 
 // 比例尺模块 - 用于数据映射
 export { scaleLinear } from 'd3';
+export type { ScaleLinear } from 'd3';
 
 // 形状模块 - 用于生成SVG路径
 export { arc, line } from 'd3';

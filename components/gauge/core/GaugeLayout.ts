@@ -15,6 +15,22 @@ export class GaugeLayoutCalculator {
   // D3比例尺 - 核心概念讲解
   private angleScale: ScaleLinear<number, number>;
 
+  // 常量定义
+  private static readonly MATH_CONSTANTS = {
+    HALF_DIVISOR: 2
+  } as const;
+
+  private static readonly CONSTANTS = {
+    CENTER_RATIO: GaugeLayoutCalculator.MATH_CONSTANTS.HALF_DIVISOR,
+    SEGMENT_VALUE_RATIO: GaugeLayoutCalculator.MATH_CONSTANTS.HALF_DIVISOR,
+    INNER_RADIUS_RATIO: 0.8,
+    LABEL_FONT_SIZE_DEFAULT: 10,
+    LABEL_OFFSET_RATIO: 0.5,
+    PI_HALF: Math.PI / GaugeLayoutCalculator.MATH_CONSTANTS.HALF_DIVISOR,
+    ANGLE_NORMALIZATION_OFFSET: 1,
+    ANGLE_TO_DEGREES: 180
+  } as const;
+
   constructor(config: GaugeConfig) {
     this.config = config;
     this.layout = this.calculateBaseLayout();
@@ -50,7 +66,7 @@ export class GaugeLayoutCalculator {
     const { width, height, gauge, background, layout } = this.config;
 
     // 计算中心点
-    const centerX = width / 2;
+    const centerX = width / GaugeLayoutCalculator.CONSTANTS.CENTER_RATIO;
     const centerY = height * layout.centerYRatio;
 
     // 计算基础半径
@@ -89,7 +105,7 @@ export class GaugeLayoutCalculator {
   public calculateSegments(): SegmentData[] {
     return this.config.segments.map(segment => ({
       ...segment,
-      value: (segment.min + segment.max) / 2,
+      value: (segment.min + segment.max) / GaugeLayoutCalculator.CONSTANTS.SEGMENT_VALUE_RATIO,
       startAngle: this.angleScale(segment.min),
       endAngle: this.angleScale(segment.max)
     }));
@@ -101,85 +117,118 @@ export class GaugeLayoutCalculator {
    */
   public calculateTicks(): TickData[] {
     const { ticks, range } = this.config;
-    console.log('ticks: ', ticks);
-    // 修改条件：只要刻度线显示或标签显示，就生成刻度数据
+
+    // 只要刻度线显示或标签显示，就生成刻度数据
     if (!ticks.show && !ticks.label.show) {
       return [];
     }
 
+    return this.generateTickData(ticks, range);
+  }
+
+  /**
+   * 生成刻度数据的具体实现
+   */
+  private generateTickData(ticks: GaugeConfig['ticks'], range: GaugeConfig['range']): TickData[] {
     const tickData: TickData[] = [];
-    const { centerX, centerY, gauge } = this.layout;
+    const { gauge } = this.layout;
     const endRadius = gauge.outerRadius;
 
     for (let i = 0; i <= ticks.count; i++) {
-      // 计算当前刻度的数值
-      const value = range.min + (i / ticks.count) * (range.max - range.min);
-
-      // 使用比例尺计算角度
-      const angle = this.angleScale(value);
-
-      // 判断是否为主刻度
-      const isMain = i % ticks.mainTickEvery === 0;
-
-      // 计算刻度长度
-      const tickLength = isMain ? ticks.mainLength : ticks.length;
-
-      // 计算刻度线的起点和终点坐标
-      // 这里使用了三角函数将极坐标转换为直角坐标
-      const startRadius = endRadius - tickLength;
-
-      let labelX;
-      let labelY;
-      if (isMain && ticks.label.show) {
-        if (ticks.label.position === 'inner') {
-          // inner位置：保持环形布局，但投影到内圆下方区域
-          // 使用与其他元素一致的角度变换
-          const adjustedAngleForInner = angle - Math.PI;
-          const baseRadius = gauge.innerRadius * 0.8; // 内圆下方的半径
-          const offsetY = (ticks.label.fontSize || 10) * 0.5; // 向下偏移
-
-          labelX = Math.cos(adjustedAngleForInner) * baseRadius;
-          labelY = Math.sin(adjustedAngleForInner) * baseRadius - offsetY;
-        } else {
-          // outer位置：保持原有的圆弧分布
-          const labelRadius = endRadius + ticks.label.offset;
-          labelX = Math.cos(angle) * labelRadius;
-          labelY = Math.sin(angle) * labelRadius;
-        }
-      }
-
-      // 为了与D3 arc生成器保持一致，需要调整手动坐标计算的角度
-      // angleScale输出[0,π]，但配合rotate(-90)后，需要转换为正确的刻度位置
-      const adjustedAngle = angle - Math.PI / 2;
-
-      let adjustedLabelX;
-      let adjustedLabelY;
-      if (labelX !== undefined && labelY !== undefined) {
-        if (ticks.label.position === 'inner') {
-          // inner位置：使用直接计算的坐标，不需要旋转变换
-          adjustedLabelX = labelX;
-          adjustedLabelY = labelY;
-        } else {
-          // outer位置：保持原有计算方式
-          adjustedLabelX = Math.cos(adjustedAngle) * (endRadius + ticks.label.offset);
-          adjustedLabelY = Math.sin(adjustedAngle) * (endRadius + ticks.label.offset);
-        }
-      }
-
-      tickData.push({
-        value,
-        angle: adjustedAngle, // 使用调整后的角度
-        isMain,
-        // 使用调整后的角度计算坐标，使其与segments对齐
-        x: Math.cos(adjustedAngle) * endRadius,
-        y: Math.sin(adjustedAngle) * endRadius,
-        labelX: adjustedLabelX,
-        labelY: adjustedLabelY
-      });
+      const tickInfo = this.calculateSingleTick(i, ticks, range, endRadius);
+      tickData.push(tickInfo);
     }
 
-    console.log('tickData: ', tickData);
     return tickData;
+  }
+
+  /**
+   * 计算单个刻度的信息
+   */
+  private calculateSingleTick(
+    index: number,
+    ticks: GaugeConfig['ticks'],
+    range: GaugeConfig['range'],
+    endRadius: number
+  ): TickData {
+    // 计算当前刻度的数值
+    const value = range.min + (index / ticks.count) * (range.max - range.min);
+
+    // 使用比例尺计算角度
+    const angle = this.angleScale(value);
+
+    // 判断是否为主刻度
+    const isMain = index % ticks.mainTickEvery === 0;
+
+    // 计算标签位置
+    const labelPosition = this.calculateLabelPosition(angle, isMain, ticks, endRadius);
+
+    // 为了与D3 arc生成器保持一致，需要调整手动坐标计算的角度
+    // angleScale输出[0,π]，但配合rotate(-90)后，需要转换为正确的刻度位置
+    const adjustedAngle = angle - GaugeLayoutCalculator.CONSTANTS.PI_HALF;
+
+    return {
+      value,
+      angle: adjustedAngle,
+      isMain,
+      // 使用调整后的角度计算坐标，使其与segments对齐
+      x: Math.cos(adjustedAngle) * endRadius,
+      y: Math.sin(adjustedAngle) * endRadius,
+      labelX: labelPosition.adjustedLabelX,
+      labelY: labelPosition.adjustedLabelY
+    };
+  }
+
+  /**
+   * 计算标签位置
+   */
+  private calculateLabelPosition(
+    angle: number,
+    isMain: boolean,
+    ticks: GaugeConfig['ticks'],
+    endRadius: number
+  ): { adjustedLabelX?: number; adjustedLabelY?: number } {
+    if (!isMain || !ticks.label.show) {
+      return {};
+    }
+
+    const { gauge } = this.layout;
+    let labelX: number;
+    let labelY: number;
+
+    if (ticks.label.position === 'inner') {
+      // inner位置：保持环形布局，但投影到内圆下方区域
+      // 使用与其他元素一致的角度变换
+      const adjustedAngleForInner = angle - Math.PI;
+
+      // 内圆下方的半径
+      const baseRadius = gauge.innerRadius * GaugeLayoutCalculator.CONSTANTS.INNER_RADIUS_RATIO;
+
+      // 向下偏移
+      const offsetY =
+        (ticks.label.fontSize || GaugeLayoutCalculator.CONSTANTS.LABEL_FONT_SIZE_DEFAULT) *
+        GaugeLayoutCalculator.CONSTANTS.LABEL_OFFSET_RATIO;
+
+      labelX = Math.cos(adjustedAngleForInner) * baseRadius;
+      labelY = Math.sin(adjustedAngleForInner) * baseRadius - offsetY;
+    } else {
+      // outer位置：保持原有的圆弧分布
+      const labelRadius = endRadius + ticks.label.offset;
+      labelX = Math.cos(angle) * labelRadius;
+      labelY = Math.sin(angle) * labelRadius;
+    }
+
+    // 调整标签坐标
+    const adjustedAngle = angle - GaugeLayoutCalculator.CONSTANTS.PI_HALF;
+
+    if (ticks.label.position === 'inner') {
+      // inner位置：使用直接计算的坐标，不需要旋转变换
+      return { adjustedLabelX: labelX, adjustedLabelY: labelY };
+    }
+    // outer位置：保持原有计算方式
+    const adjustedLabelX = Math.cos(adjustedAngle) * (endRadius + ticks.label.offset);
+    const adjustedLabelY = Math.sin(adjustedAngle) * (endRadius + ticks.label.offset);
+    return { adjustedLabelX, adjustedLabelY };
   }
 
   /**
@@ -187,7 +236,7 @@ export class GaugeLayoutCalculator {
    * 这是一个便捷方法，对外暴露比例尺功能
    */
   public valueToAngle(value: number): number {
-    return this.angleScale(value);
+    return this.angleScale(value) as number;
   }
 
   /**
@@ -198,8 +247,9 @@ export class GaugeLayoutCalculator {
     const { centerX, centerY, gauge } = this.layout;
     const pointerLength = gauge.innerRadius * this.config.pointer.length;
 
-    const normalizedRatio = angle / Math.PI - 1;
-    const angleDeg = normalizedRatio * 180;
+    const normalizedRatio =
+      angle / Math.PI - GaugeLayoutCalculator.CONSTANTS.ANGLE_NORMALIZATION_OFFSET;
+    const angleDeg = normalizedRatio * GaugeLayoutCalculator.CONSTANTS.ANGLE_TO_DEGREES;
 
     return {
       x: centerX + Math.cos(angle) * pointerLength,

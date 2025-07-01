@@ -29,9 +29,8 @@ export async function getImageDimensions(src: string): Promise<{ width: number; 
   try {
     const img = await preloadImage(src);
     return { width: img.naturalWidth, height: img.naturalHeight };
-  } catch (error) {
-    console.warn('Failed to load image:', src);
-    // 默认尺寸
+  } catch {
+    // 图片加载失败时返回默认尺寸
     return { width: 20, height: 80 };
   }
 }
