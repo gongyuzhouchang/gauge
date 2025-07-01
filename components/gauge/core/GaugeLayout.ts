@@ -236,7 +236,7 @@ export class GaugeLayoutCalculator {
    * 这是一个便捷方法，对外暴露比例尺功能
    */
   public valueToAngle(value: number): number {
-    return this.angleScale(value) as number;
+    return this.angleScale(value);
   }
 
   /**

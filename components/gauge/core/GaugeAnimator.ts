@@ -63,7 +63,10 @@ export class GaugeAnimator {
     pointerSelection: Selection<SVGLineElement, unknown, null, undefined>,
     newAngle: number
   ): void {
-    const pointerTransition = this.getTransition(pointerSelection);
+    // Type assertion: SVGLineElement extends BaseType, so this is safe
+    const pointerTransition = this.getTransition(
+      pointerSelection as unknown as Selection<BaseType, unknown, null, undefined>
+    );
 
     pointerTransition.attrTween('transform', () => {
       // 获取当前变换信息
