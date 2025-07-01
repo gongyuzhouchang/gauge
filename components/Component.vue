@@ -3,7 +3,11 @@
     <!-- 仪表盘组件区域 -->
     <div class="container">
       <div class="title">恐惧贪婪指数仪表盘</div>
-      <div id="gauge-chart" ref="gaugeChartRef"></div>
+      <div
+        id="gauge-chart"
+        ref="gaugeChartRef"
+        style="width: 500px; height: 350px; margin: auto"
+      ></div>
     </div>
     <div class="controls">
       <button class="btn btn-fear" @click="updateValue(10)">极度恐惧 (10)</button>
@@ -66,14 +70,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-// import { BarChart } from './bar/BarChart';
-// import type { BarChartData } from './bar/types/data';
-// import type { BarChartConfig } from './bar/types/config';
+import { BarChart } from './bar/BarChart';
+import type { BarChartData } from './bar/types/data';
+import type { BarChartConfig } from './bar/types/config';
 // import { FinalGaugeChart } from './gauge/FinalGaugeChart';
 import { D3GaugeChart } from './gauge/D3GaugeChart';
 
 // 图表容器引用
-// const chartRef = ref<HTMLElement | null>(null);
+const chartRef = ref<HTMLElement | null>(null);
 const gaugeChartRef = ref<HTMLElement | null>(null);
 // const tooltipRef = ref<HTMLElement | null>(null);
 
@@ -104,7 +108,7 @@ function testLabelMapping() {
       const value = testValues[index];
       console.log(
         `测试数值 ${value}:`,
-        d3GaugeChart?.getCurrentSegmentLabel?.(value) || '获取标签失败'
+        d3GaugeChart?.getCurrentSegmentLabel(value) || '获取标签失败'
       );
       d3GaugeChart?.setValue(value);
       index++;
@@ -230,7 +234,7 @@ function useArrowPointer() {
     </svg>
   `;
   const base64Arrow = btoa(arrowSvg);
-  
+
   d3GaugeChart.updateConfig({
     pointer: {
       ...d3GaugeChart.getConfig().pointer,
@@ -240,7 +244,7 @@ function useArrowPointer() {
         width: 20,
         height: 80,
         offsetX: -10,
-        offsetY: -75,
+        offsetY: -75
       }
     }
   });
@@ -258,7 +262,7 @@ function useNeedlePointer() {
     </svg>
   `;
   const base64Needle = btoa(needleSvg);
-  
+
   d3GaugeChart.updateConfig({
     pointer: {
       ...d3GaugeChart.getConfig().pointer,
@@ -450,8 +454,6 @@ const initGaugeChart = () => {
   try {
     // 创建D3仪表盘实例
     d3GaugeChart = new D3GaugeChart(gaugeChartRef.value, {
-      width: 400,
-      height: 300,
       segments: [
         { min: 0, max: 25, color: '#ff4444', label: 'Extreme Fear' },
         { min: 25, max: 45, color: '#ff8844', label: 'Fear' },

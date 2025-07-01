@@ -196,11 +196,11 @@ export const DEFAULT_CONFIG: GaugeConfig = {
     image: {
       src: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIyNjEiIHZpZXdCb3g9IjAgMCAxNiAyNjEiIGZpbGw9Im5vbmUiPgo8cGF0aCBkPSJNNi45NzMwOSAxLjQ5OTYzQzYuOTg4MDcgMC45NDMyNDggNy40NDM0MSAwLjUgOCAwLjVDOC41NTY1OSAwLjUgOS4wMTE5MyAwLjk0MzI1NCA5LjAyNjkxIDEuNDk5NjRMMTUuNzg0NyAyNTIuNTAzQzE1LjkwMjcgMjU2Ljg4NCAxMi4zODMgMjYwLjUgOCAyNjAuNUMzLjYxNjk5IDI2MC41IDAuMDk3MzQ1MSAyNTYuODg0IDAuMjE1MzA3IDI1Mi41MDNMNi45NzMwOSAxLjQ5OTYzWiIgZmlsbD0iYmxhY2siLz4KPC9zdmc+',
       width: 20,
-      height: 70,
+      height: 80,
       // 图片宽度的一半，让图片水平居中
       offsetX: -10,
       // 大部分图片偏移到旋转中心上方
-      offsetY: -70
+      offsetY: -80
     }
   },
   text: {

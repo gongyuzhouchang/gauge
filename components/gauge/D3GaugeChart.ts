@@ -31,7 +31,25 @@ export class D3GaugeChart {
 
   constructor(container: HTMLElement, options?: Partial<GaugeConfig>) {
     this.container = container;
-    this.config = merge({}, DEFAULT_CONFIG, options);
+
+    // Resolve width and height. Prioritize user options, then container size, then default.
+    const resolvedOptions = { ...options };
+
+    if (resolvedOptions.width === undefined) {
+      const containerWidth = container.clientWidth;
+      if (containerWidth > 0) {
+        resolvedOptions.width = containerWidth;
+      }
+    }
+
+    if (resolvedOptions.height === undefined) {
+      const containerHeight = container.clientHeight;
+      if (containerHeight > 0) {
+        resolvedOptions.height = containerHeight;
+      }
+    }
+
+    this.config = merge({}, DEFAULT_CONFIG, resolvedOptions);
     this.svg = this.createSvgContainer();
     this.layoutCalculator = new GaugeLayoutCalculator(this.config);
     this.renderer = new GaugeRenderer(this.svg, this.config, this.layoutCalculator.getLayout());
@@ -140,6 +158,10 @@ export class D3GaugeChart {
 
   public getData(): GaugeData | null {
     return this.data;
+  }
+
+  public getCurrentSegmentLabel(value: number): string {
+    return this.renderer.getCurrentSegmentLabel(value);
   }
 
   public destroy(): void {
